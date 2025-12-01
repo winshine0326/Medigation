@@ -1,7 +1,6 @@
 import Flutter
 import UIKit
-// TODO: Google Maps API 키 설정 후 아래 주석 해제
-// import GoogleMaps
+import GoogleMaps
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -9,8 +8,8 @@ import UIKit
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    // TODO: Google Maps API 키 설정 후 아래 주석 해제
-    // GMSServices.provideAPIKey("YOUR_API_KEY")
+    // Google Maps API 키 설정
+    GMSServices.provideAPIKey("AIzaSyDIayIQRliBgHWAj3q5Dh_Bk9iIq-7MH9w")
 
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)

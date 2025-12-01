@@ -6,7 +6,8 @@
       "Bash(bash)",
       "Bash(dart pub global activate:*)",
       "Bash($HOME/.pub-cache/bin/flutterfire configure)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash($HOME/.pub-cache/bin/flutterfire configure:*)"
     ],
     "deny": [],
     "ask": []

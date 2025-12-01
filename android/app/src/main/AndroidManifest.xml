@@ -41,11 +41,10 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
-        <!-- TODO: Google Maps API 키 추가 -->
-        <!-- Google Cloud Console에서 API 키를 발급받은 후 아래 주석 해제하고 YOUR_API_KEY를 실제 키로 교체 -->
-        <!-- <meta-data
+        <!-- Google Maps API 키 -->
+        <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="YOUR_API_KEY"/> -->
+            android:value="AIzaSyDIayIQRliBgHWAj3q5Dh_Bk9iIq-7MH9w"/>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
