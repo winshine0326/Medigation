@@ -144,6 +144,11 @@ class FilterNotifier extends _$FilterNotifier {
     );
   }
 
+  /// 필터 초기화 (별칭)
+  void clearFilter() {
+    clearFilters();
+  }
+
   /// 필터 적용
   Future<void> _applyFilters() async {
     if (!state.condition.isActive) {

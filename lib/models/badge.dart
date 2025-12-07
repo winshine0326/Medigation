@@ -116,6 +116,50 @@ extension BadgeTypeExtension on BadgeType {
         return const Color(0xFF66BB6A); // 밝은 초록
     }
   }
+
+  /// 배지 레이블
+  String get label {
+    switch (this) {
+      case BadgeType.stroke:
+        return '뇌졸중';
+      case BadgeType.heartAttack:
+        return '심근경색';
+      case BadgeType.pneumonia:
+        return '폐렴';
+      case BadgeType.surgery:
+        return '수술';
+      case BadgeType.emergency:
+        return '응급';
+      case BadgeType.maternity:
+        return '산부인과';
+      case BadgeType.pediatrics:
+        return '소아과';
+      case BadgeType.orthopedics:
+        return '정형외과';
+      case BadgeType.dentistry:
+        return '치과';
+      case BadgeType.dermatology:
+        return '피부과';
+      case BadgeType.ophthalmology:
+        return '안과';
+      case BadgeType.ent:
+        return '이비인후과';
+      case BadgeType.psychiatry:
+        return '정신과';
+      case BadgeType.cardiology:
+        return '심장내과';
+      case BadgeType.neurology:
+        return '신경과';
+      case BadgeType.oncology:
+        return '종양학';
+      case BadgeType.urology:
+        return '비뇨기과';
+      case BadgeType.gastroenterology:
+        return '소화기내과';
+      case BadgeType.general:
+        return '일반';
+    }
+  }
 }
 
 /// 배지 모델

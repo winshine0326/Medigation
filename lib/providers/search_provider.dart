@@ -179,12 +179,22 @@ class SearchNotifier extends _$SearchNotifier {
     }
   }
 
+  /// 검색 히스토리 전체 삭제 (별칭)
+  Future<void> clearAllHistory() async {
+    await clearHistory();
+  }
+
   /// 검색 결과 초기화
   void clearResults() {
     state = state.copyWith(
       query: '',
       results: [],
     );
+  }
+
+  /// 검색 초기화 (검색어 + 결과)
+  void clearSearch() {
+    clearResults();
   }
 
   /// 검색 히스토리 항목으로 검색
