@@ -54,7 +54,26 @@ class HospitalListNotifier extends _$HospitalListNotifier {
 
     try {
       final repository = ref.read(hospitalRepositoryProvider);
-      final hospitals = await repository.getAllHospitals();
+
+      // 먼저 캐시된 데이터 확인
+      List<Hospital> hospitals = await repository.getAllHospitals();
+
+      // 캐시된 데이터가 없으면 기본 위치(서울 시청)에서 HIRA API로 검색
+      if (hospitals.isEmpty) {
+        print('캐시된 병원 데이터 없음. HIRA API로 서울 시청 주변 병원 검색 중...');
+        try {
+          hospitals = await repository.searchNearbyHospitalsFromHira(
+            latitude: 37.5665, // 서울 시청 위도
+            longitude: 126.9780, // 서울 시청 경도
+            radiusInMeters: 10000, // 10km
+            numOfRows: 50,
+          );
+          print('HIRA API에서 ${hospitals.length}개 병원 검색 완료');
+        } catch (apiError) {
+          print('HIRA API 검색 실패: $apiError');
+          // API 실패해도 빈 리스트로 계속 진행
+        }
+      }
 
       // 첫 페이지 데이터만 로드
       final firstPageHospitals = hospitals.take(_pageSize).toList();
@@ -139,6 +158,15 @@ class HospitalListNotifier extends _$HospitalListNotifier {
     } catch (e) {
       state = state.copyWith(error: e.toString());
     }
+  }
+
+  /// 병원 목록 직접 업데이트 (검색 결과 등)
+  void updateHospitals(List<Hospital> hospitals) {
+    state = state.copyWith(
+      hospitals: hospitals,
+      hasMore: false,
+      currentPage: 1,
+    );
   }
 
   /// 캐시 초기화

@@ -144,7 +144,7 @@ class LocationNotifier extends _$LocationNotifier {
     }
   }
 
-  /// 주변 병원 검색
+  /// 주변 병원 검색 (HIRA API 사용)
   Future<void> searchNearbyHospitals({double radiusKm = 5.0}) async {
     if (!state.hasLocation) {
       await getCurrentLocation();
@@ -157,21 +157,47 @@ class LocationNotifier extends _$LocationNotifier {
       final repository = ref.read(hospitalRepositoryProvider);
       final position = state.currentPosition!;
 
-      final hospitals = await repository.getNearbyHospitals(
+      // HIRA API로 실시간 검색 (반경을 미터로 변환)
+      final radiusInMeters = (radiusKm * 1000).toInt();
+      final hospitals = await repository.searchNearbyHospitalsFromHira(
         latitude: position.latitude,
         longitude: position.longitude,
-        radiusKm: radiusKm,
+        radiusInMeters: radiusInMeters,
+        numOfRows: 50, // 최대 50개 병원 검색
       );
 
       state = state.copyWith(
         nearbyHospitals: hospitals,
         isLoading: false,
       );
+
+      // HospitalListProvider에도 업데이트 (지도에 표시하기 위해)
+      // 이 부분은 HospitalListNotifier에서 처리하도록 수정 필요
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: '주변 병원 검색에 실패했습니다: $e',
-      );
+      print('HIRA API 주변 병원 검색 실패: $e');
+
+      // HIRA API 실패 시 캐시된 데이터로 fallback
+      try {
+        final repository = ref.read(hospitalRepositoryProvider);
+        final position = state.currentPosition!;
+
+        final hospitals = await repository.getNearbyHospitals(
+          latitude: position.latitude,
+          longitude: position.longitude,
+          radiusKm: radiusKm,
+        );
+
+        state = state.copyWith(
+          nearbyHospitals: hospitals,
+          isLoading: false,
+          error: 'HIRA API 연결 실패. 캐시된 데이터를 표시합니다.',
+        );
+      } catch (cacheError) {
+        state = state.copyWith(
+          isLoading: false,
+          error: '주변 병원 검색에 실패했습니다: $e',
+        );
+      }
     }
   }
 

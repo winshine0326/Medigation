@@ -74,9 +74,15 @@ class _HospitalListScreenState extends ConsumerState<HospitalListScreen> {
       ),
       body: _buildBody(hospitalListState, bookmarkState, locationState),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
+        onPressed: () async {
           // 현재 위치 기반 검색
-          ref.read(locationNotifierProvider.notifier).searchNearbyHospitals();
+          await ref.read(locationNotifierProvider.notifier).searchNearbyHospitals();
+
+          // 검색된 병원을 HospitalListProvider에도 반영
+          final nearbyHospitals = ref.read(locationNotifierProvider).nearbyHospitals;
+          if (nearbyHospitals.isNotEmpty) {
+            ref.read(hospitalListNotifierProvider.notifier).updateHospitals(nearbyHospitals);
+          }
         },
         child: const Icon(Icons.my_location),
       ),
