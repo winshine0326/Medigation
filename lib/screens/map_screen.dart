@@ -34,6 +34,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final hospitalListState = ref.watch(hospitalListNotifierProvider);
     final locationState = ref.watch(locationNotifierProvider);
 
+    // 병원 목록이 변경될 때마다 마커 업데이트
+    _updateMarkersFromState(hospitalListState.hospitals);
+
     // 초기 카메라 위치 (현재 위치 또는 서울 시청)
     final initialPosition = locationState.hasLocation
         ? LatLng(
@@ -133,12 +136,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   /// 지도 생성 콜백
   void _onMapCreated(GoogleMapController controller) {
     _mapController = controller;
-    _updateMarkers();
   }
 
-  /// 마커 업데이트
-  void _updateMarkers() {
-    final hospitals = ref.read(hospitalListNotifierProvider).hospitals;
+  /// 마커 업데이트 (병원 목록으로부터)
+  void _updateMarkersFromState(List<Hospital> hospitals) {
     final newMarkers = <Marker>{};
 
     for (final hospital in hospitals) {
@@ -161,9 +162,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       newMarkers.add(marker);
     }
 
-    setState(() {
-      _markers = newMarkers;
-    });
+    // 마커가 실제로 변경되었을 때만 업데이트
+    if (_markers.length != newMarkers.length) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _markers = newMarkers;
+          });
+        }
+      });
+    }
   }
 
   /// 현재 위치로 이동
