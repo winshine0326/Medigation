@@ -7,8 +7,6 @@ part 'filter_provider.g.dart';
 /// 필터 조건
 class FilterCondition {
   final List<String> selectedBadgeTypes;
-  final int? minReviewCount;
-  final double? minRating;
   final List<String> selectedTotalGrades; // 선택된 종합 등급 목록 (S, A, B, C, D)
   final int? minSpecialistCount; // 최소 전문의 수
   final int? minDiagnosisCount; // 최소 특수 진료 수
@@ -17,8 +15,6 @@ class FilterCondition {
 
   const FilterCondition({
     this.selectedBadgeTypes = const [],
-    this.minReviewCount,
-    this.minRating,
     this.selectedTotalGrades = const [],
     this.minSpecialistCount,
     this.minDiagnosisCount,
@@ -28,8 +24,6 @@ class FilterCondition {
 
   FilterCondition copyWith({
     List<String>? selectedBadgeTypes,
-    int? minReviewCount,
-    double? minRating,
     List<String>? selectedTotalGrades,
     int? minSpecialistCount,
     int? minDiagnosisCount,
@@ -38,8 +32,6 @@ class FilterCondition {
   }) {
     return FilterCondition(
       selectedBadgeTypes: selectedBadgeTypes ?? this.selectedBadgeTypes,
-      minReviewCount: minReviewCount ?? this.minReviewCount,
-      minRating: minRating ?? this.minRating,
       selectedTotalGrades: selectedTotalGrades ?? this.selectedTotalGrades,
       minSpecialistCount: minSpecialistCount ?? this.minSpecialistCount,
       minDiagnosisCount: minDiagnosisCount ?? this.minDiagnosisCount,
@@ -51,8 +43,6 @@ class FilterCondition {
   /// 필터가 적용되었는지 확인
   bool get isActive {
     return selectedBadgeTypes.isNotEmpty ||
-        minReviewCount != null ||
-        minRating != null ||
         selectedTotalGrades.isNotEmpty ||
         minSpecialistCount != null ||
         minDiagnosisCount != null ||
@@ -107,20 +97,6 @@ class FilterNotifier extends _$FilterNotifier {
   /// 배지 타입 필터 설정
   void setBadgeTypes(List<String> badgeTypes) {
     final newCondition = state.condition.copyWith(selectedBadgeTypes: badgeTypes);
-    state = state.copyWith(condition: newCondition);
-    _applyFilters();
-  }
-
-  /// 최소 리뷰 수 필터 설정 (역필터링)
-  void setMinReviewCount(int? count) {
-    final newCondition = state.condition.copyWith(minReviewCount: count);
-    state = state.copyWith(condition: newCondition);
-    _applyFilters();
-  }
-
-  /// 최소 평점 필터 설정 (역필터링)
-  void setMinRating(double? rating) {
-    final newCondition = state.condition.copyWith(minRating: rating);
     state = state.copyWith(condition: newCondition);
     _applyFilters();
   }
@@ -195,8 +171,6 @@ class FilterNotifier extends _$FilterNotifier {
 
       // 역필터링 및 새 필터 적용
       hospitals = await repository.filterOutHospitals(
-        minReviewCount: state.condition.minReviewCount,
-        minRating: state.condition.minRating,
         selectedTotalGrades: state.condition.selectedTotalGrades,
         minSpecialistCount: state.condition.minSpecialistCount,
         minDiagnosisCount: state.condition.minDiagnosisCount,

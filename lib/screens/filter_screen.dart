@@ -15,8 +15,6 @@ class FilterScreen extends ConsumerStatefulWidget {
 
 class _FilterScreenState extends ConsumerState<FilterScreen> {
   late List<String> _selectedBadgeTypes;
-  late double? _minRating;
-  late int? _minReviewCount;
   late List<String> _selectedTotalGrades; // 선택된 종합 등급 목록
   late int? _minSpecialistCount;
   late int? _minDiagnosisCount;
@@ -28,8 +26,6 @@ class _FilterScreenState extends ConsumerState<FilterScreen> {
     // 현재 필터 상태 로드
     final condition = ref.read(filterNotifierProvider).condition;
     _selectedBadgeTypes = List.from(condition.selectedBadgeTypes);
-    _minRating = condition.minRating;
-    _minReviewCount = condition.minReviewCount;
     _selectedTotalGrades = List.from(condition.selectedTotalGrades);
     _minSpecialistCount = condition.minSpecialistCount;
     _minDiagnosisCount = condition.minDiagnosisCount;
@@ -57,8 +53,6 @@ class _FilterScreenState extends ConsumerState<FilterScreen> {
             _buildCapacityFilter(),
             const Divider(height: 1),
             _buildBadgeFilterSection(),
-            const Divider(height: 1),
-            _buildReverseFilterSection(),
             const Divider(height: 1),
             _buildDistanceFilterSection(),
           ],
@@ -239,47 +233,6 @@ class _FilterScreenState extends ConsumerState<FilterScreen> {
     );
   }
 
-  /// 역필터링 섹션
-  Widget _buildReverseFilterSection() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            '리뷰 필터',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // 최소 평점 필터
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('최소 평점', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-              Text(_minRating != null ? '${_minRating!.toStringAsFixed(1)}점 이상' : '제한 없음'),
-            ],
-          ),
-          Slider(
-            value: _minRating ?? 0.0,
-            min: 0.0,
-            max: 5.0,
-            divisions: 10,
-            label: _minRating?.toStringAsFixed(1) ?? '제한 없음',
-            onChanged: (value) {
-              setState(() {
-                _minRating = value > 0 ? value : null;
-              });
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
   /// 거리 필터 섹션
   Widget _buildDistanceFilterSection() {
     return Padding(
@@ -323,8 +276,6 @@ class _FilterScreenState extends ConsumerState<FilterScreen> {
   void _applyFilters() {
     final notifier = ref.read(filterNotifierProvider.notifier);
     notifier.setBadgeTypes(_selectedBadgeTypes);
-    notifier.setMinRating(_minRating);
-    notifier.setMinReviewCount(_minReviewCount);
     notifier.setSelectedTotalGrades(_selectedTotalGrades);
     notifier.setMinSpecialistCount(_minSpecialistCount);
     notifier.setMinDiagnosisCount(_minDiagnosisCount);
@@ -337,8 +288,6 @@ class _FilterScreenState extends ConsumerState<FilterScreen> {
   void _resetFilters() {
     setState(() {
       _selectedBadgeTypes = [];
-      _minRating = null;
-      _minReviewCount = null;
       _selectedTotalGrades = [];
       _minSpecialistCount = null;
       _minDiagnosisCount = null;

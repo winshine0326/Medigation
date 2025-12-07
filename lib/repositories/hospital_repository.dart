@@ -225,8 +225,6 @@ class HospitalRepository {
 
   /// 역필터링 및 상세 필터: 특정 조건을 만족하지 않는 병원 제외
   Future<List<Hospital>> filterOutHospitals({
-    int? minReviewCount,
-    double? minRating,
     List<String>? selectedTotalGrades, // 선택된 종합 등급 목록 (S, A, B, C, D)
     int? minSpecialistCount, // 최소 전문의 수
     int? minDiagnosisCount, // 최소 특수 진료 수
@@ -235,20 +233,6 @@ class HospitalRepository {
       final allHospitals = await getAllHospitals();
 
       return allHospitals.where((hospital) {
-        // 리뷰 개수 필터
-        if (minReviewCount != null && hospital.reviewStatistics != null) {
-          if (hospital.reviewStatistics!.totalReviewCount < minReviewCount) {
-            return false; // 제외
-          }
-        }
-
-        // 평점 필터
-        if (minRating != null && hospital.reviewStatistics != null) {
-          if (hospital.reviewStatistics!.averageRating < minRating) {
-            return false; // 제외
-          }
-        }
-
         // 종합 등급 필터 (다중 선택)
         if (selectedTotalGrades != null && selectedTotalGrades.isNotEmpty) {
           final totalScore = HospitalScoreCalculator.calculateTotalScore(hospital);

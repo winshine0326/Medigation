@@ -23,7 +23,9 @@ class BookmarkRepository {
         'hospitalId': hospitalId,
         'createdAt': FieldValue.serverTimestamp(),
       });
+      print('북마크 추가 성공: $bookmarkId');
     } catch (e) {
+      print('북마크 추가 실패: $e');
       throw Exception('북마크 추가에 실패했습니다: $e');
     }
   }
@@ -36,7 +38,9 @@ class BookmarkRepository {
     try {
       final bookmarkId = '${userId}_$hospitalId';
       await _bookmarksCollection.doc(bookmarkId).delete();
+      print('북마크 제거 성공: $bookmarkId');
     } catch (e) {
+      print('북마크 제거 실패: $e');
       throw Exception('북마크 제거에 실패했습니다: $e');
     }
   }
@@ -47,15 +51,32 @@ class BookmarkRepository {
   /// Returns: 북마크한 병원 ID 목록
   Future<List<String>> getBookmarks(String userId) async {
     try {
+      print('북마크 조회 요청 (userId: $userId)');
+      
+      // Firestore 인덱스 생성 없이 조회하기 위해 orderBy 제거
       final snapshot = await _bookmarksCollection
           .where('userId', isEqualTo: userId)
-          .orderBy('createdAt', descending: true)
           .get();
 
-      return snapshot.docs
+      print('북마크 조회 결과: ${snapshot.docs.length}건');
+
+      // 메모리 내 정렬 (최신순) - 수정 가능한 리스트로 복사
+      final docs = List.of(snapshot.docs);
+      
+      docs.sort((a, b) {
+        final dataA = a.data();
+        final dataB = b.data();
+        
+        final aTime = (dataA['createdAt'] as Timestamp?)?.toDate() ?? DateTime(0);
+        final bTime = (dataB['createdAt'] as Timestamp?)?.toDate() ?? DateTime(0);
+        return bTime.compareTo(aTime); // 내림차순
+      });
+
+      return docs
           .map((doc) => doc.data()['hospitalId'] as String)
           .toList();
     } catch (e) {
+      print('북마크 목록 조회 실패 상세: $e');
       throw Exception('북마크 목록 조회에 실패했습니다: $e');
     }
   }
