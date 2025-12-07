@@ -70,18 +70,20 @@ class HospitalRepository {
       var hospital = Hospital.fromJson(data);
 
       // 3. HIRA API로 평가/가격 데이터 보강 (선택적)
-      try {
-        final evaluations = await _hiraApi.getHospitalEvaluations(hospitalId);
-        final prices = await _hiraApi.getNonCoveredPrices(hospitalId);
-
-        hospital = hospital.copyWith(
-          evaluations: evaluations.isNotEmpty ? evaluations : hospital.evaluations,
-          nonCoveredPrices: prices.isNotEmpty ? prices : hospital.nonCoveredPrices,
-        );
-      } catch (e) {
-        // HIRA API 오류는 무시하고 계속 진행
-        print('HIRA API 데이터 조회 실패 (무시됨): $e');
-      }
+      // TODO: 평가/가격 API가 추가되면 활성화
+      // 현재는 병원 기본 정보만 조회
+      // try {
+      //   final evaluations = await _hiraApi.getHospitalEvaluations(hospitalId);
+      //   final prices = await _hiraApi.getNonCoveredPrices(hospitalId);
+      //
+      //   hospital = hospital.copyWith(
+      //     evaluations: evaluations.isNotEmpty ? evaluations : hospital.evaluations,
+      //     nonCoveredPrices: prices.isNotEmpty ? prices : hospital.nonCoveredPrices,
+      //   );
+      // } catch (e) {
+      //   // HIRA API 오류는 무시하고 계속 진행
+      //   print('HIRA API 데이터 조회 실패 (무시됨): $e');
+      // }
 
       // 4. 로컬 캐시에 저장
       await _localDb.cacheHospital(hospital);
@@ -247,6 +249,68 @@ class HospitalRepository {
       await _localDb.clearAllCache();
     } catch (e) {
       throw Exception('캐시 초기화에 실패했습니다: $e');
+    }
+  }
+
+  /// HIRA API로 주변 병원 검색 (실시간)
+  ///
+  /// Firestore 캐시가 아닌 실시간 HIRA API 조회
+  Future<List<Hospital>> searchNearbyHospitalsFromHira({
+    required double latitude,
+    required double longitude,
+    int radiusInMeters = 5000,
+    int numOfRows = 20,
+  }) async {
+    try {
+      final hospitals = await _hiraApi.searchNearbyHospitals(
+        latitude: latitude,
+        longitude: longitude,
+        radiusInMeters: radiusInMeters,
+        numOfRows: numOfRows,
+      );
+
+      // Firestore에 저장 (캐싱)
+      for (final hospital in hospitals) {
+        try {
+          await addHospital(hospital);
+        } catch (e) {
+          // 이미 존재하는 병원은 무시
+          print('병원 저장 스킵 (이미 존재): ${hospital.id}');
+        }
+      }
+
+      return hospitals;
+    } catch (e) {
+      print('HIRA API 주변 병원 검색 실패: $e');
+      throw Exception('주변 병원 검색에 실패했습니다: $e');
+    }
+  }
+
+  /// HIRA API로 병원명 검색 (실시간)
+  Future<List<Hospital>> searchHospitalsByNameFromHira({
+    required String hospitalName,
+    int numOfRows = 20,
+  }) async {
+    try {
+      final hospitals = await _hiraApi.searchByName(
+        hospitalName: hospitalName,
+        numOfRows: numOfRows,
+      );
+
+      // Firestore에 저장 (캐싱)
+      for (final hospital in hospitals) {
+        try {
+          await addHospital(hospital);
+        } catch (e) {
+          // 이미 존재하는 병원은 무시
+          print('병원 저장 스킵 (이미 존재): ${hospital.id}');
+        }
+      }
+
+      return hospitals;
+    } catch (e) {
+      print('HIRA API 병원명 검색 실패: $e');
+      throw Exception('병원 검색에 실패했습니다: $e');
     }
   }
 

@@ -6,7 +6,7 @@ part of 'location_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$locationNotifierHash() => r'adb8c77580f78199ded73ca2f8829e479ad018a1';
+String _$locationNotifierHash() => r'c8af211633ab4420afaece13839499268ee94749';
 
 /// 위치 Notifier
 /// 현재 위치 및 위치 권한을 관리합니다

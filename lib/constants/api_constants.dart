@@ -1,13 +1,10 @@
 /// API 관련 상수 정의
 class ApiConstants {
   // 건강보험심사평가원 (HIRA) API
-  static const String hiraBaseUrl = 'https://openapi.hira.or.kr/openapi/service';
+  static const String hiraBaseUrl = 'https://apis.data.go.kr/B551182';
 
-  // 병원평가정보서비스
-  static const String hiraHospitalEvaluationEndpoint = '/hisTblcinfoService';
-
-  // 비급여진료비정보서비스
-  static const String hiraNonCoveredPriceEndpoint = '/unCvrPrcInfoService';
+  // 병원정보서비스 v2
+  static const String hiraHospitalInfoEndpoint = '/hospInfoServicev2/getHospBasisList';
 
   // API 키 (환경 변수에서 로드)
   // .env 파일에서 HIRA_API_KEY 설정 필요
