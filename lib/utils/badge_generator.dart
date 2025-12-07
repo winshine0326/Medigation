@@ -1,3 +1,4 @@
+import '../models/hospital.dart';
 import '../constants/badge_mappings.dart';
 import '../models/badge.dart';
 import '../models/hospital_evaluation.dart';
@@ -5,19 +6,68 @@ import '../models/hospital_evaluation.dart';
 /// 배지 생성 유틸리티
 /// 병원 평가 데이터를 분석하여 사용자가 이해하기 쉬운 배지로 변환
 class BadgeGenerator {
+  /// 병원 상세 정보를 기반으로 가상의 평가(배지) 목록 생성
+  ///
+  /// [hospital] 병원 정보 (상세 정보 포함)
+  /// Returns: 생성된 HospitalEvaluation 목록
+  static List<HospitalEvaluation> generateEvaluationsFromDetailInfo(Hospital hospital) {
+    final evaluations = <HospitalEvaluation>[];
+
+    // 1. 특수 진료 정보 -> 배지 변환
+    for (final info in hospital.specialDiagnosisInfoList) {
+      evaluations.add(HospitalEvaluation(
+        evaluationItem: info.searchCodeName,
+        grade: '인증', // 가상 등급
+        badges: ['${info.searchCodeName} 가능'],
+      ));
+    }
+
+    // 2. 간호 등급 정보 -> 배지 변환 (1등급만)
+    for (final info in hospital.nursingGradeInfoList) {
+      if (info.careGrade.contains('1등급')) {
+        evaluations.add(HospitalEvaluation(
+          evaluationItem: info.typeName,
+          grade: '1등급',
+          badges: ['최우수 간호 인력'],
+        ));
+      }
+    }
+
+    // 3. 전문의 정보 -> 배지 변환 (5명 이상인 과)
+    for (final info in hospital.specialistInfoList) {
+      if (info.specialistCount >= 5) {
+        evaluations.add(HospitalEvaluation(
+          evaluationItem: info.specialtyName,
+          grade: '우수',
+          badges: ['${info.specialtyName} 전문의 다수 보유'],
+        ));
+      }
+    }
+
+    return evaluations;
+  }
+
   /// 단일 평가 항목에서 배지 생성
   ///
   /// [evaluation] 병원 평가 정보
   /// Returns: 생성된 Badge 객체, 조건 미충족 시 null
   static Badge? generateFromEvaluation(HospitalEvaluation evaluation) {
     // 등급이 1~2등급이 아니면 배지 생성 안 함
-    if (!BadgeMappings.isQualifiedGrade(evaluation.grade)) {
+    if (!BadgeMappings.isQualifiedGrade(evaluation.grade) && evaluation.grade != '인증' && evaluation.grade != '우수') {
       return null;
     }
 
     // 평가 항목에서 매핑 찾기
     final mapping = BadgeMappings.findMapping(evaluation.evaluationItem);
     if (mapping == null) {
+      // 매핑이 없으면 기본 배지 반환 (상세 정보 기반 생성된 경우)
+      if (evaluation.badges.isNotEmpty) {
+        return Badge(
+          type: BadgeType.specialty,
+          label: evaluation.badges.first,
+          description: evaluation.evaluationItem,
+        );
+      }
       return null;
     }
 
@@ -234,3 +284,4 @@ class BadgeGenerator {
     return true;
   }
 }
+

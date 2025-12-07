@@ -9,6 +9,7 @@ import '../data_sources/firebase_provider.dart';
 import '../data_sources/local_db_provider.dart';
 import '../data_sources/hira_api_provider.dart';
 import '../utils/hospital_score_calculator.dart';
+import '../utils/badge_generator.dart';
 
 part 'hospital_repository.g.dart';
 
@@ -108,14 +109,20 @@ class HospitalRepository {
       final specialDiagnosisInfo = results[2] as List<SpecialDiagnosisInfo>;
 
       // 데이터가 없으면 기존 데이터 유지 (또는 빈 리스트)
-      final updatedHospital = hospital.copyWith(
+      var updatedHospital = hospital.copyWith(
         specialistInfoList: specialistInfo.isNotEmpty ? specialistInfo : hospital.specialistInfoList,
         nursingGradeInfoList: nursingGradeInfo.isNotEmpty ? nursingGradeInfo : hospital.nursingGradeInfoList,
         specialDiagnosisInfoList: specialDiagnosisInfo.isNotEmpty ? specialDiagnosisInfo : hospital.specialDiagnosisInfoList,
       );
 
+      // 배지 및 가상 평가 데이터 생성
+      final evaluations = BadgeGenerator.generateEvaluationsFromDetailInfo(updatedHospital);
+      updatedHospital = updatedHospital.copyWith(
+        evaluations: evaluations.isNotEmpty ? evaluations : hospital.evaluations,
+      );
+
       // 변경사항이 있으면 로컬 DB 업데이트
-      if (specialistInfo.isNotEmpty || nursingGradeInfo.isNotEmpty || specialDiagnosisInfo.isNotEmpty) {
+      if (specialistInfo.isNotEmpty || nursingGradeInfo.isNotEmpty || specialDiagnosisInfo.isNotEmpty || evaluations.isNotEmpty) {
         await _localDb.cacheHospital(updatedHospital);
         // Firestore 업데이트는 선택적 (비용 절감 위해 로컬만 업데이트할 수도 있음)
         // await updateHospital(updatedHospital); 

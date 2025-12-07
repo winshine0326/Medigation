@@ -39,4 +39,5 @@ const _$BadgeTypeEnumMap = {
   BadgeType.urology: 'urology',
   BadgeType.gastroenterology: 'gastroenterology',
   BadgeType.general: 'general',
+  BadgeType.specialty: 'specialty',
 };

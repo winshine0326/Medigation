@@ -25,6 +25,7 @@ enum BadgeType {
   urology, // 비뇨기과
   gastroenterology, // 소화기내과
   general, // 일반
+  specialty, // 특수 진료
 }
 
 /// 배지 아이콘 및 색상 매핑
@@ -70,6 +71,8 @@ extension BadgeTypeExtension on BadgeType {
         return Icons.restaurant;
       case BadgeType.general:
         return Icons.local_hospital;
+      case BadgeType.specialty:
+        return Icons.stars;
     }
   }
 
@@ -114,6 +117,8 @@ extension BadgeTypeExtension on BadgeType {
         return const Color(0xFFFFCA28); // 노랑
       case BadgeType.general:
         return const Color(0xFF66BB6A); // 밝은 초록
+      case BadgeType.specialty:
+        return const Color(0xFF7E57C2); // 딥 퍼플
     }
   }
 
@@ -158,6 +163,8 @@ extension BadgeTypeExtension on BadgeType {
         return '소화기내과';
       case BadgeType.general:
         return '일반';
+      case BadgeType.specialty:
+        return '특수진료';
     }
   }
 }
