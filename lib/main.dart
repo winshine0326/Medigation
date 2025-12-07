@@ -8,12 +8,16 @@ import 'screens/hospital_detail_screen.dart';
 import 'screens/search_screen.dart';
 import 'screens/filter_screen.dart';
 import 'models/hospital.dart';
+import 'constants/api_constants.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // 환경 변수 로드
   await dotenv.load(fileName: '.env');
+
+  // HIRA API 키 설정
+  ApiConstants.hiraApiKey = dotenv.env['HIRA_API_KEY'];
 
   // Firebase 초기화
   await Firebase.initializeApp(
