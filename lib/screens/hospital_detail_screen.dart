@@ -7,7 +7,6 @@ import '../repositories/hospital_repository.dart';
 import '../widgets/badge_chip.dart';
 import '../widgets/rating_display.dart';
 import '../utils/hospital_score_calculator.dart';
-import '../utils/hospital_warning_checker.dart';
 import '../utils/review_link_generator.dart';
 
 /// 병원 상세 화면
@@ -100,12 +99,6 @@ class _HospitalDetailScreenState extends ConsumerState<HospitalDetailScreen> {
                   // 병원 기본 정보
                   _buildBasicInfo(context, distance),
                   const Divider(height: 1),
-
-                  // 경고 섹션 (있을 경우)
-                  if (HospitalWarningChecker.hasWarnings(_hospital)) ...[
-                    _buildWarningSection(context),
-                    const Divider(height: 1),
-                  ],
 
                   // 데이터 융합 리포트 섹션
                   _buildScoreReportSection(context),
@@ -640,78 +633,6 @@ class _HospitalDetailScreenState extends ConsumerState<HospitalDetailScreen> {
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (Match m) => '${m[1]},',
         );
-  }
-
-  /// 경고 섹션
-  Widget _buildWarningSection(BuildContext context) {
-    final warnings = HospitalWarningChecker.checkWarnings(_hospital);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      color: Colors.red[50],
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.warning_amber_rounded,
-                color: Colors.red[700],
-                size: 24,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '주의사항',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.red[700],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ...warnings.map((warning) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    warning.icon,
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          warning.message,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          warning.description,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[700],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
-        ],
-      ),
-    );
   }
 
   /// 데이터 융합 리포트 섹션
