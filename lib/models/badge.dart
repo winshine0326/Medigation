@@ -61,7 +61,7 @@ extension BadgeTypeExtension on BadgeType {
       case BadgeType.cardiology:
         return Icons.monitor_heart;
       case BadgeType.neurology:
-        return Icons.brain;
+        return Icons.psychology; // 신경과 (뇌 관련)
       case BadgeType.oncology:
         return Icons.science;
       case BadgeType.urology:
