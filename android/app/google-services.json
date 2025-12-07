@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "672532803612",
+    "project_id": "medigation-773ab",
+    "storage_bucket": "medigation-773ab.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:672532803612:android:223b90aa83b3656e36afd9",
+        "android_client_info": {
+          "package_name": "com.example.medigation"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBAEEsdPiIMlXAF7TU79eSFZUYoabDp6XQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

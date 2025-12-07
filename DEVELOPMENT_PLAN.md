@@ -13,12 +13,13 @@
 - [x] 위치 정보 패키지 추가 (`geolocator`, `geocoding`)
 - [x] `flutter pub get` 실행
 
-### 1.2 Firebase 설정 ⚠️ (수동 설정 필요)
-- [ ] **[수동 필요]** Firebase 프로젝트 생성 (https://console.firebase.google.com)
-- [ ] **[수동 필요]** Android용 Firebase 설정 (`google-services.json` 다운로드 및 `android/app/`에 배치)
-- [ ] **[수동 필요]** iOS용 Firebase 설정 (`GoogleService-Info.plist` 다운로드 및 `ios/Runner/`에 배치)
-- [x] Firebase 초기화 코드 작성 (`main.dart` - Firebase 설정 후 주석 해제 필요)
-- [ ] **[수동 필요]** Firestore 데이터베이스 생성 및 규칙 설정
+### 1.2 Firebase 설정 ✅
+- [x] Firebase 프로젝트 생성 (https://console.firebase.google.com)
+- [x] Android용 Firebase 설정 (`google-services.json` 다운로드 및 `android/app/`에 배치)
+- [x] iOS용 Firebase 설정 (`GoogleService-Info.plist` 다운로드 및 `ios/Runner/`에 배치)
+- [x] `flutterfire configure --project=medigation-773ab` 실행 완료
+- [x] Firebase 초기화 코드 작성 (`main.dart`)
+- [ ] **[수동 필요]** Firestore 데이터베이스 생성 및 규칙 설정 (Firebase Console에서 수행)
 
 ### 1.3 Google Maps API 설정 ✅
 - [x] Google Cloud Console에서 Maps SDK for Android 활성화
@@ -29,7 +30,7 @@
 - [x] iOS `Info.plist`에 위치 권한 설명 추가
 - [x] Android 권한 설정 완료
 
-### 1.4 프로젝트 폴더 구조 생성 ✅
+### 1.4 프로젝트 폴더 구조 생성 ₩
 - [x] `lib/models/` 디렉토리 생성
 - [x] `lib/providers/` 디렉토리 생성 (Riverpod providers)
 - [x] `lib/repositories/` 디렉토리 생성
@@ -46,20 +47,12 @@
 - ✅ Firebase 및 Riverpod 초기화 코드 준비 완료
 - ✅ Google Maps API 키 발급 및 Android/iOS 설정 완료
 
-**Firebase 설정 가이드 (수동 작업 필요):**
-1. 터미널에서 다음 명령 실행:
-   ```bash
-   flutterfire configure --project=medigation-773ab
-   ```
-2. 플랫폼 선택 시 `android`와 `ios`만 선택 (Space로 선택/해제, Enter로 확인)
-3. 설정 완료 후 `lib/firebase_options.dart` 파일이 자동 생성됨
-4. `lib/main.dart`에서 Firebase 초기화 주석 해제:
-   ```dart
-   await Firebase.initializeApp(
-     options: DefaultFirebaseOptions.currentPlatform,
-   );
-   ```
-5. Firebase Console에서 Firestore 데이터베이스 생성 및 규칙 설정
+**Firebase 설정 완료 상태:**
+- ✅ `flutterfire configure --project=medigation-773ab` 실행 완료
+- ✅ `android/app/google-services.json` 생성 완료
+- ✅ `ios/Runner/GoogleService-Info.plist` 생성 완료
+- ⚠️ `lib/firebase_options.dart` 파일 확인 필요 (누락 시 flutterfire configure 재실행)
+- ⚠️ Firebase Console에서 Firestore 데이터베이스 생성 및 규칙 설정 필요
 
 ---
 
@@ -313,23 +306,24 @@
 
 ## 진행 상황 추적
 
-**현재 단계:** Phase 1 완료 (Firebase 설정 제외) → Phase 2 준비
+**현재 단계:** Phase 1 완료 → Phase 2 준비
 
-**완료율:** 12% (Phase 1 거의 완료)
+**완료율:** 15% (Phase 1 완료)
 
 **완료된 Phase:**
-- ✅ Phase 1: 프로젝트 초기 설정 및 구성 (95% 완료)
+- ✅ Phase 1: 프로젝트 초기 설정 및 구성 (100% 완료)
   - ✅ 모든 의존성 패키지 설치
   - ✅ 프로젝트 폴더 구조 생성
   - ✅ Android/iOS 기본 설정 및 권한 구성
   - ✅ Firebase/Riverpod 초기화 코드 준비
   - ✅ Google Maps API 키 설정 완료
-  - ⚠️ Firebase 설정 (수동 작업 필요 - flutterfire configure 실행)
+  - ✅ Firebase 설정 완료 (`flutterfire configure` 실행 완료)
 
 **다음 작업:**
-1. 사용자가 직접 `flutterfire configure --project=medigation-773ab` 실행
-2. Phase 2: 핵심 데이터 모델 구현 시작 (Hospital, HospitalEvaluation, Badge 등)
+1. `lib/firebase_options.dart` 파일 확인 (누락 시 `flutterfire configure` 재실행)
+2. Firebase Console에서 Firestore 데이터베이스 생성
+3. Phase 2: 핵심 데이터 모델 구현 시작 (Hospital, HospitalEvaluation, Badge 등)
 
 **최근 업데이트:**
-- 2025-12-01: Phase 1 대부분 완료 (Google Maps API 키 설정)
-- Firebase 설정은 대화형 명령이므로 사용자가 직접 실행 필요
+- 2025-12-07: Firebase 설정 완료 (`flutterfire configure` 실행)
+- 2025-12-01: Google Maps API 키 설정 및 Phase 1 대부분 완료
