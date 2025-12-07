@@ -44,6 +44,7 @@ class HiraApiProvider {
         'ServiceKey': _apiKey,
         'pageNo': pageNo.toString(),
         'numOfRows': numOfRows.toString(),
+        '_type': 'json', // JSON 응답 요청
       };
 
       // 선택적 파라미터 추가
@@ -65,6 +66,9 @@ class HiraApiProvider {
       );
 
       if (response.statusCode == 200) {
+        print('✅ HIRA API 응답 성공');
+        print('응답 데이터 타입: ${response.data.runtimeType}');
+        print('응답 데이터: ${response.data}');
         return _parseHospitalListResponse(response.data);
       } else {
         throw Exception('병원 정보 조회 실패: ${response.statusCode}');
@@ -81,52 +85,106 @@ class HiraApiProvider {
   /// 병원 목록 응답 파싱
   List<Hospital> _parseHospitalListResponse(dynamic data) {
     try {
-      final body = data['response']?['body'];
+      print('📋 파싱 시작...');
+      print('데이터 키들: ${data.keys}');
+
+      // API 응답 구조 확인
+      final response = data['response'];
+      if (response == null) {
+        print('❌ response 키가 없습니다. 전체 데이터: $data');
+        return [];
+      }
+
+      print('response 키들: ${response.keys}');
+
+      final header = response['header'];
+      final body = response['body'];
+
+      if (header != null) {
+        print('📌 Header - resultCode: ${header['resultCode']}, resultMsg: ${header['resultMsg']}');
+      }
 
       if (body == null) {
-        print('응답 body가 없습니다.');
+        print('❌ body가 없습니다.');
         return [];
       }
 
-      final items = body['items']?['item'];
+      print('body 키들: ${body.keys}');
+      print('totalCount: ${body['totalCount']}, pageNo: ${body['pageNo']}, numOfRows: ${body['numOfRows']}');
+
+      final items = body['items'];
 
       if (items == null) {
-        print('응답 items가 없습니다.');
+        print('❌ items가 없습니다.');
         return [];
       }
 
-      final List itemList = items is List ? items : [items];
+      print('items 타입: ${items.runtimeType}');
+      print('items 내용: $items');
 
-      return itemList.map((item) {
+      // items가 빈 문자열인 경우 처리
+      if (items is String && items.isEmpty) {
+        print('⚠️ items가 빈 문자열입니다. 검색 결과 없음.');
+        return [];
+      }
+
+      final item = items['item'];
+
+      if (item == null) {
+        print('❌ item이 없습니다.');
+        return [];
+      }
+
+      print('item 타입: ${item.runtimeType}');
+
+      final List itemList = item is List ? item : [item];
+      print('✅ ${itemList.length}개 병원 데이터 파싱 시작');
+
+      final hospitals = <Hospital>[];
+
+      for (var i = 0; i < itemList.length; i++) {
         try {
+          final hospitalData = itemList[i];
+          print('[$i] 병원 데이터: ${hospitalData.keys}');
+
           // 좌표 파싱
           double latitude = 0.0;
           double longitude = 0.0;
 
           try {
-            latitude = double.parse(item['YPos']?.toString() ?? '0.0');
-            longitude = double.parse(item['XPos']?.toString() ?? '0.0');
+            final yPos = hospitalData['YPos']?.toString() ?? '0.0';
+            final xPos = hospitalData['XPos']?.toString() ?? '0.0';
+            latitude = double.parse(yPos);
+            longitude = double.parse(xPos);
+            print('[$i] 좌표: ($latitude, $longitude)');
           } catch (e) {
-            print('좌표 파싱 오류: $e');
+            print('[$i] 좌표 파싱 오류: $e');
           }
 
-          return Hospital(
-            id: item['ykiho']?.toString() ?? '', // 요양기관기호
-            name: item['yadmNm']?.toString() ?? '병원명 없음', // 병원명
-            address: item['addr']?.toString() ?? '주소 정보 없음', // 주소
+          final hospital = Hospital(
+            id: hospitalData['ykiho']?.toString() ?? 'unknown_$i',
+            name: hospitalData['yadmNm']?.toString() ?? '병원명 없음',
+            address: hospitalData['addr']?.toString() ?? '주소 정보 없음',
             latitude: latitude,
             longitude: longitude,
-            evaluations: [], // 평가 데이터는 별도 API로 조회
-            nonCoveredPrices: [], // 비급여 가격은 별도 API로 조회
-            reviewStatistics: null, // 리뷰 통계는 별도로 수집
+            evaluations: [],
+            nonCoveredPrices: [],
+            reviewStatistics: null,
           );
-        } catch (e) {
-          print('병원 데이터 파싱 오류: $e, item: $item');
-          return null;
+
+          print('[$i] ✅ 병원 생성: ${hospital.name}');
+          hospitals.add(hospital);
+        } catch (e, stackTrace) {
+          print('[$i] ❌ 병원 데이터 파싱 오류: $e');
+          print('스택 트레이스: $stackTrace');
         }
-      }).whereType<Hospital>().toList();
-    } catch (e) {
-      print('병원 목록 파싱 전체 오류: $e');
+      }
+
+      print('✅ 파싱 완료: ${hospitals.length}개 병원');
+      return hospitals;
+    } catch (e, stackTrace) {
+      print('❌ 병원 목록 파싱 전체 오류: $e');
+      print('스택 트레이스: $stackTrace');
       return [];
     }
   }
