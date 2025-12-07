@@ -3,39 +3,90 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/hospital.dart';
 import '../data_sources/firebase_provider.dart';
+import '../data_sources/local_db_provider.dart';
+import '../data_sources/hira_api_provider.dart';
 
 part 'hospital_repository.g.dart';
 
 /// 병원 데이터 Repository
-/// Firestore와의 실제 통신을 담당하며, 데이터 소스를 추상화
+/// 캐시 우선 로직으로 데이터를 제공
+/// 1. 로컬 캐시 확인
+/// 2. 캐시 없으면 Firestore에서 조회
+/// 3. HIRA API로 평가/가격 데이터 보강
 class HospitalRepository {
   final CollectionReference<Map<String, dynamic>> _hospitalsCollection;
+  final LocalDbProvider _localDb;
+  final HiraApiProvider _hiraApi;
 
-  HospitalRepository(this._hospitalsCollection);
+  HospitalRepository(
+    this._hospitalsCollection,
+    this._localDb,
+    this._hiraApi,
+  );
 
-  /// 모든 병원 목록을 가져옵니다
+  /// 모든 병원 목록을 가져옵니다 (캐시 우선)
   Future<List<Hospital>> getAllHospitals() async {
     try {
+      // 1. 로컬 캐시 확인
+      final cachedHospitals = await _localDb.getAllCachedHospitals();
+      if (cachedHospitals.isNotEmpty) {
+        return cachedHospitals;
+      }
+
+      // 2. Firestore에서 조회
       final snapshot = await _hospitalsCollection.get();
-      return snapshot.docs.map((doc) {
+      final hospitals = snapshot.docs.map((doc) {
         final data = doc.data();
         data['id'] = doc.id;
         return Hospital.fromJson(data);
       }).toList();
+
+      // 3. 로컬 캐시에 저장
+      for (final hospital in hospitals) {
+        await _localDb.cacheHospital(hospital);
+      }
+
+      return hospitals;
     } catch (e) {
       throw Exception('병원 목록을 가져오는데 실패했습니다: $e');
     }
   }
 
-  /// 특정 병원의 상세 정보를 가져옵니다
+  /// 특정 병원의 상세 정보를 가져옵니다 (캐시 우선 + HIRA 데이터 보강)
   Future<Hospital?> getHospitalById(String hospitalId) async {
     try {
+      // 1. 로컬 캐시 확인
+      final cachedHospital = await _localDb.getCachedHospital(hospitalId);
+      if (cachedHospital != null) {
+        return cachedHospital;
+      }
+
+      // 2. Firestore에서 조회
       final doc = await _hospitalsCollection.doc(hospitalId).get();
       if (!doc.exists) return null;
 
       final data = doc.data()!;
       data['id'] = doc.id;
-      return Hospital.fromJson(data);
+      var hospital = Hospital.fromJson(data);
+
+      // 3. HIRA API로 평가/가격 데이터 보강 (선택적)
+      try {
+        final evaluations = await _hiraApi.getHospitalEvaluations(hospitalId);
+        final prices = await _hiraApi.getNonCoveredPrices(hospitalId);
+
+        hospital = hospital.copyWith(
+          evaluations: evaluations.isNotEmpty ? evaluations : hospital.evaluations,
+          nonCoveredPrices: prices.isNotEmpty ? prices : hospital.nonCoveredPrices,
+        );
+      } catch (e) {
+        // HIRA API 오류는 무시하고 계속 진행
+        print('HIRA API 데이터 조회 실패 (무시됨): $e');
+      }
+
+      // 4. 로컬 캐시에 저장
+      await _localDb.cacheHospital(hospital);
+
+      return hospital;
     } catch (e) {
       throw Exception('병원 정보를 가져오는데 실패했습니다: $e');
     }
@@ -66,11 +117,9 @@ class HospitalRepository {
     double radiusKm = 5.0,
   }) async {
     try {
-      // Firestore는 geohash를 직접 지원하지 않으므로
-      // 모든 병원을 가져온 후 클라이언트에서 필터링
       final allHospitals = await getAllHospitals();
 
-      return allHospitals.where((hospital) {
+      final nearbyHospitals = allHospitals.where((hospital) {
         final distance = _calculateDistance(
           latitude,
           longitude,
@@ -79,8 +128,125 @@ class HospitalRepository {
         );
         return distance <= radiusKm;
       }).toList();
+
+      // 거리순으로 정렬
+      nearbyHospitals.sort((a, b) {
+        final distA = _calculateDistance(latitude, longitude, a.latitude, a.longitude);
+        final distB = _calculateDistance(latitude, longitude, b.latitude, b.longitude);
+        return distA.compareTo(distB);
+      });
+
+      return nearbyHospitals;
     } catch (e) {
       throw Exception('주변 병원 검색에 실패했습니다: $e');
+    }
+  }
+
+  /// 병원 이름으로 검색
+  Future<List<Hospital>> searchHospitalsByName(String query) async {
+    try {
+      if (query.trim().isEmpty) {
+        return [];
+      }
+
+      final allHospitals = await getAllHospitals();
+      final lowerQuery = query.toLowerCase();
+
+      return allHospitals.where((hospital) {
+        return hospital.name.toLowerCase().contains(lowerQuery) ||
+            hospital.address.toLowerCase().contains(lowerQuery);
+      }).toList();
+    } catch (e) {
+      throw Exception('병원 검색에 실패했습니다: $e');
+    }
+  }
+
+  /// 배지 타입으로 병원 필터링
+  Future<List<Hospital>> filterHospitalsByBadges(List<String> badgeTypes) async {
+    try {
+      if (badgeTypes.isEmpty) {
+        return getAllHospitals();
+      }
+
+      final allHospitals = await getAllHospitals();
+
+      return allHospitals.where((hospital) {
+        // 병원의 평가에서 배지를 확인
+        for (final evaluation in hospital.evaluations) {
+          for (final badge in evaluation.badges) {
+            if (badgeTypes.any((type) => badge.toLowerCase().contains(type.toLowerCase()))) {
+              return true;
+            }
+          }
+        }
+        return false;
+      }).toList();
+    } catch (e) {
+      throw Exception('병원 필터링에 실패했습니다: $e');
+    }
+  }
+
+  /// 역필터링: 특정 조건을 만족하지 않는 병원 제외
+  Future<List<Hospital>> filterOutHospitals({
+    int? minReviewCount,
+    double? minRating,
+    List<String>? excludeGrades,
+  }) async {
+    try {
+      final allHospitals = await getAllHospitals();
+
+      return allHospitals.where((hospital) {
+        // 리뷰 개수 필터
+        if (minReviewCount != null && hospital.reviewStatistics != null) {
+          if (hospital.reviewStatistics!.totalReviewCount < minReviewCount) {
+            return false; // 제외
+          }
+        }
+
+        // 평점 필터
+        if (minRating != null && hospital.reviewStatistics != null) {
+          if (hospital.reviewStatistics!.averageRating < minRating) {
+            return false; // 제외
+          }
+        }
+
+        // 평가 등급 제외
+        if (excludeGrades != null && excludeGrades.isNotEmpty) {
+          for (final evaluation in hospital.evaluations) {
+            if (excludeGrades.contains(evaluation.grade)) {
+              return false; // 제외
+            }
+          }
+        }
+
+        return true; // 포함
+      }).toList();
+    } catch (e) {
+      throw Exception('병원 역필터링에 실패했습니다: $e');
+    }
+  }
+
+  /// 데이터 동기화: Firestore → 로컬 캐시
+  Future<void> syncData() async {
+    try {
+      // 만료된 캐시 정리
+      await _localDb.clearExpiredCache();
+
+      // Firestore에서 최신 데이터 가져오기
+      final hospitals = await getAllHospitals();
+
+      print('데이터 동기화 완료: ${hospitals.length}개 병원');
+    } catch (e) {
+      throw Exception('데이터 동기화에 실패했습니다: $e');
+    }
+  }
+
+  /// 캐시 초기화
+  Future<void> clearCache() async {
+    try {
+      await _localDb.clearAllCache();
+    } catch (e) {
+      throw Exception('캐시 초기화에 실패했습니다: $e');
     }
   }
 
@@ -113,5 +279,7 @@ class HospitalRepository {
 @riverpod
 HospitalRepository hospitalRepository(HospitalRepositoryRef ref) {
   final hospitalsCollection = ref.watch(hospitalsCollectionProvider);
-  return HospitalRepository(hospitalsCollection);
+  final localDb = ref.watch(localDbProviderProvider);
+  final hiraApi = ref.watch(hiraApiProviderProvider);
+  return HospitalRepository(hospitalsCollection, localDb, hiraApi);
 }

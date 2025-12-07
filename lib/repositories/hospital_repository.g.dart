@@ -7,7 +7,7 @@ part of 'hospital_repository.dart';
 // **************************************************************************
 
 String _$hospitalRepositoryHash() =>
-    r'033479072b8ed04b76432983983170a775497e8c';
+    r'62176d3a62d1fb241a61e8ef8e6f3f971b78548e';
 
 /// HospitalRepository Provider
 ///

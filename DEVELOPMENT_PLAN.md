@@ -135,23 +135,34 @@
 
 ---
 
-## Phase 4: Repository Layer 구현
+## Phase 4: Repository Layer 구현 ✅ (완료)
 
-### 4.1 HospitalRepository
-- [ ] `lib/repositories/hospital_repository.dart` 생성
-- [ ] 병원 목록 조회 메서드 (캐시 우선, 없으면 API 호출)
-- [ ] 병원 상세 정보 조회 메서드
-- [ ] 지역 기반 병원 검색 메서드
-- [ ] 거리 기반 병원 검색 메서드
-- [ ] 필터링 로직 구현 (역필터링 포함)
-- [ ] 데이터 동기화 로직 구현
+### 4.1 HospitalRepository ✅
+- [x] `lib/repositories/hospital_repository.dart` 확장
+- [x] 병원 목록 조회 메서드 (캐시 우선 로직)
+- [x] 병원 상세 정보 조회 메서드 (HIRA 데이터 보강)
+- [x] 지역 기반 병원 검색 메서드
+- [x] 거리 기반 병원 검색 메서드 (거리순 정렬)
+- [x] 이름/주소 검색 기능
+- [x] 배지 기반 필터링
+- [x] 역필터링 로직 구현 (평점, 리뷰 수, 등급)
+- [x] 데이터 동기화 로직 구현
+- [x] 캐시 초기화 기능
 
-### 4.2 BookmarkRepository
-- [ ] `lib/repositories/bookmark_repository.dart` 생성
-- [ ] 북마크 추가 메서드
-- [ ] 북마크 제거 메서드
-- [ ] 북마크 목록 조회 메서드
-- [ ] 북마크 여부 확인 메서드
+### 4.2 BookmarkRepository ✅
+- [x] `lib/repositories/bookmark_repository.dart` 생성 (Phase 3 완료)
+- [x] 북마크 추가 메서드
+- [x] 북마크 제거 메서드
+- [x] 북마크 목록 조회 메서드
+- [x] 북마크 여부 확인 메서드
+- [x] 북마크 토글 기능
+
+**Phase 4 완료 사항:**
+- ✅ 캐시 우선 로직 (Local DB → Firestore → HIRA API)
+- ✅ 검색 기능 (이름, 주소, 위치 기반)
+- ✅ 필터링 기능 (배지, 역필터링)
+- ✅ 데이터 동기화 및 캐시 관리
+- ✅ 거리 계산 및 정렬
 
 ---
 
@@ -324,9 +335,9 @@
 
 ## 진행 상황 추적
 
-**현재 단계:** Phase 3 완료 → Phase 4 시작
+**현재 단계:** Phase 4 완료 → Phase 5 시작
 
-**완료율:** 45% (Phase 1, 2, 3 완료)
+**완료율:** 60% (Phase 1, 2, 3, 4 완료)
 
 **완료된 Phase:**
 - ✅ Phase 1: 프로젝트 초기 설정 및 구성 (100% 완료)
@@ -354,12 +365,18 @@
   - ✅ Local DB Provider (SQLite 캐시 시스템)
   - ✅ API 상수 정의 및 환경 변수 관리
 
+- ✅ Phase 4: Repository Layer 구현 (100% 완료)
+  - ✅ HospitalRepository 캐시 우선 로직
+  - ✅ 검색 및 필터링 기능
+  - ✅ 역필터링 시스템
+  - ✅ 데이터 동기화 및 캐시 관리
+
 **다음 작업:**
-1. Phase 4: Repository Layer 구현 (HospitalRepository 이미 부분 완료)
-   - 캐시 우선 로직 구현
-   - 필터링 및 검색 로직 강화
+1. Phase 5: 배지 번역 시스템 구현
+2. Phase 6: State Management (Riverpod) 구현
+3. Phase 7: UI Layer 구현
 
 **최근 업데이트:**
+- 2025-12-07: Phase 4 완료 - Repository Layer 및 캐시 시스템 완성
 - 2025-12-07: Phase 3 완료 - Data Source Layer 구현 완료
 - 2025-12-07: Phase 2 완료 - 모든 데이터 모델 구현 및 테스트 완료
-- 2025-12-07: Firebase 설정 완료 및 Firestore 연결 테스트 성공
