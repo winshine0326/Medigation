@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../models/hospital.dart';
 import '../providers/bookmark_provider.dart';
 import '../providers/location_provider.dart';
 import '../widgets/badge_chip.dart';
 import '../widgets/rating_display.dart';
+import '../utils/hospital_score_calculator.dart';
+import '../utils/hospital_warning_checker.dart';
+import '../utils/review_link_generator.dart';
 
 /// 병원 상세 화면
 /// 병원의 종합 리포트 (평가 + 가격 + 리뷰)를 표시
@@ -52,6 +54,16 @@ class HospitalDetailScreen extends ConsumerWidget {
           children: [
             // 병원 기본 정보
             _buildBasicInfo(context, distance),
+            const Divider(height: 1),
+
+            // 경고 섹션 (있을 경우)
+            if (HospitalWarningChecker.hasWarnings(hospital)) ...[
+              _buildWarningSection(context),
+              const Divider(height: 1),
+            ],
+
+            // 데이터 융합 리포트 섹션
+            _buildScoreReportSection(context),
             const Divider(height: 1),
 
             // 배지 섹션
@@ -452,25 +464,289 @@ class HospitalDetailScreen extends ConsumerWidget {
         );
   }
 
+  /// 경고 섹션
+  Widget _buildWarningSection(BuildContext context) {
+    final warnings = HospitalWarningChecker.checkWarnings(hospital);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      color: Colors.red[50],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.warning_amber_rounded,
+                color: Colors.red[700],
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '주의사항',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red[700],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...warnings.map((warning) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    warning.icon,
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          warning.message,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          warning.description,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ],
+      ),
+    );
+  }
+
+  /// 데이터 융합 리포트 섹션
+  Widget _buildScoreReportSection(BuildContext context) {
+    final report = HospitalScoreCalculator.generateReport(hospital);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '종합 리포트',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // 종합 점수 카드
+          Card(
+            elevation: 2,
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  // 종합 점수 및 등급
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        report.totalScore.toStringAsFixed(1),
+                        style: TextStyle(
+                          fontSize: 48,
+                          fontWeight: FontWeight.bold,
+                          color: Color(
+                            int.parse(
+                                '0xFF${report.scoreColor.substring(1)}'),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '등급 ${report.grade}',
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            '/ 100점',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 데이터 완성도
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        '데이터 완성도: ',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                      Text(
+                        report.dataCompletenessText,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '(${report.dataCompleteness.toStringAsFixed(0)}%)',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // 점수 구성 상세
+          const Text(
+            '점수 구성',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // 평가 데이터 (40%)
+          _buildScoreItem(
+            '평가 데이터',
+            report.evaluationScore,
+            report.evaluationContribution,
+            Icons.assessment,
+            Colors.blue,
+          ),
+          const SizedBox(height: 8),
+
+          // 리뷰 통계 (40%)
+          _buildScoreItem(
+            '리뷰 통계',
+            report.reviewScore,
+            report.reviewContribution,
+            Icons.star,
+            Colors.orange,
+          ),
+          const SizedBox(height: 8),
+
+          // 배지 (20%)
+          _buildScoreItem(
+            '전문 분야',
+            report.badgeScore,
+            report.badgeContribution,
+            Icons.verified,
+            Colors.green,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 점수 구성 항목
+  Widget _buildScoreItem(
+    String label,
+    double score,
+    double contribution,
+    IconData icon,
+    Color color,
+  ) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: color),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 4),
+              LinearProgressIndicator(
+                value: score / 100.0,
+                backgroundColor: Colors.grey[200],
+                valueColor: AlwaysStoppedAnimation<Color>(color),
+                minHeight: 6,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              score.toStringAsFixed(1),
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              '(${contribution.toStringAsFixed(1)}점)',
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   /// 네이버 지도 열기
   Future<void> _openNaverMap() async {
-    // 네이버 지도 URL 생성 (병원 이름으로 검색)
-    final query = Uri.encodeComponent(hospital.name);
-    final url = Uri.parse('https://map.naver.com/v5/search/$query');
-
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
+    final success = await ReviewLinkGenerator.openNaverMap(hospital);
+    if (!success) {
+      // 에러 처리 (optional)
+      debugPrint('네이버 지도를 열 수 없습니다.');
     }
   }
 
   /// 카카오맵 열기
   Future<void> _openKakaoMap() async {
-    // 카카오맵 URL 생성 (병원 이름으로 검색)
-    final query = Uri.encodeComponent(hospital.name);
-    final url = Uri.parse('https://map.kakao.com/?q=$query');
-
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
+    final success = await ReviewLinkGenerator.openKakaoMap(hospital);
+    if (!success) {
+      // 에러 처리 (optional)
+      debugPrint('카카오맵을 열 수 없습니다.');
     }
   }
 }
