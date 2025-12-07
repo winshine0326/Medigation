@@ -6,6 +6,12 @@ class ApiConstants {
   // 병원정보서비스 v2
   static const String hiraHospitalInfoEndpoint = '/hospInfoServicev2/getHospBasisList';
 
+  // 의료기관별 상세정보 서비스 v2.7
+  static const String hiraMedicalDetailBaseUrl = '/MadmDtlInfoService2.7';
+  static const String hiraSpecialistInfoEndpoint = '/getSpcSbjtSdrInfo2.7'; // 전문과목별 전문의 수
+  static const String hiraNursingGradeEndpoint = '/getNursigGrdInfo2.7'; // 간호등급정보
+  static const String hiraSpecialDiagnosisEndpoint = '/getSpclDiagInfo2.7'; // 특수진료정보
+
   // API 키 (환경 변수에서 로드)
   // .env 파일에서 HIRA_API_KEY 설정 필요
   static String? hiraApiKey;

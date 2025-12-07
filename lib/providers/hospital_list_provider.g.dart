@@ -7,7 +7,7 @@ part of 'hospital_list_provider.dart';
 // **************************************************************************
 
 String _$hospitalListNotifierHash() =>
-    r'ac4d9a0021f65a577d39e0b4685f51dbe1541281';
+    r'8155a447ae25f4b41ffd95a585dfcfa6227834a1';
 
 /// 병원 목록 Notifier
 /// 병원 목록 상태를 관리하고 페이지네이션을 처리합니다

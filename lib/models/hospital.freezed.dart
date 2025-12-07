@@ -31,7 +31,14 @@ mixin _$Hospital {
       throw _privateConstructorUsedError; // 병원 평가 목록
   List<NonCoveredPrice> get nonCoveredPrices =>
       throw _privateConstructorUsedError; // 비급여 가격 목록
-  ReviewStatistics? get reviewStatistics => throw _privateConstructorUsedError;
+  ReviewStatistics? get reviewStatistics =>
+      throw _privateConstructorUsedError; // 리뷰 통계 (nullable - 리뷰가 없을 수 있음)
+  List<SpecialistInfo> get specialistInfoList =>
+      throw _privateConstructorUsedError; // 전문의 정보 목록
+  List<NursingGradeInfo> get nursingGradeInfoList =>
+      throw _privateConstructorUsedError; // 간호 등급 정보 목록
+  List<SpecialDiagnosisInfo> get specialDiagnosisInfoList =>
+      throw _privateConstructorUsedError;
 
   /// Serializes this Hospital to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -57,6 +64,9 @@ abstract class $HospitalCopyWith<$Res> {
     List<HospitalEvaluation> evaluations,
     List<NonCoveredPrice> nonCoveredPrices,
     ReviewStatistics? reviewStatistics,
+    List<SpecialistInfo> specialistInfoList,
+    List<NursingGradeInfo> nursingGradeInfoList,
+    List<SpecialDiagnosisInfo> specialDiagnosisInfoList,
   });
 
   $ReviewStatisticsCopyWith<$Res>? get reviewStatistics;
@@ -85,6 +95,9 @@ class _$HospitalCopyWithImpl<$Res, $Val extends Hospital>
     Object? evaluations = null,
     Object? nonCoveredPrices = null,
     Object? reviewStatistics = freezed,
+    Object? specialistInfoList = null,
+    Object? nursingGradeInfoList = null,
+    Object? specialDiagnosisInfoList = null,
   }) {
     return _then(
       _value.copyWith(
@@ -128,6 +141,21 @@ class _$HospitalCopyWithImpl<$Res, $Val extends Hospital>
                     ? _value.reviewStatistics
                     : reviewStatistics // ignore: cast_nullable_to_non_nullable
                         as ReviewStatistics?,
+            specialistInfoList:
+                null == specialistInfoList
+                    ? _value.specialistInfoList
+                    : specialistInfoList // ignore: cast_nullable_to_non_nullable
+                        as List<SpecialistInfo>,
+            nursingGradeInfoList:
+                null == nursingGradeInfoList
+                    ? _value.nursingGradeInfoList
+                    : nursingGradeInfoList // ignore: cast_nullable_to_non_nullable
+                        as List<NursingGradeInfo>,
+            specialDiagnosisInfoList:
+                null == specialDiagnosisInfoList
+                    ? _value.specialDiagnosisInfoList
+                    : specialDiagnosisInfoList // ignore: cast_nullable_to_non_nullable
+                        as List<SpecialDiagnosisInfo>,
           )
           as $Val,
     );
@@ -166,6 +194,9 @@ abstract class _$$HospitalImplCopyWith<$Res>
     List<HospitalEvaluation> evaluations,
     List<NonCoveredPrice> nonCoveredPrices,
     ReviewStatistics? reviewStatistics,
+    List<SpecialistInfo> specialistInfoList,
+    List<NursingGradeInfo> nursingGradeInfoList,
+    List<SpecialDiagnosisInfo> specialDiagnosisInfoList,
   });
 
   @override
@@ -194,6 +225,9 @@ class __$$HospitalImplCopyWithImpl<$Res>
     Object? evaluations = null,
     Object? nonCoveredPrices = null,
     Object? reviewStatistics = freezed,
+    Object? specialistInfoList = null,
+    Object? nursingGradeInfoList = null,
+    Object? specialDiagnosisInfoList = null,
   }) {
     return _then(
       _$HospitalImpl(
@@ -237,6 +271,21 @@ class __$$HospitalImplCopyWithImpl<$Res>
                 ? _value.reviewStatistics
                 : reviewStatistics // ignore: cast_nullable_to_non_nullable
                     as ReviewStatistics?,
+        specialistInfoList:
+            null == specialistInfoList
+                ? _value._specialistInfoList
+                : specialistInfoList // ignore: cast_nullable_to_non_nullable
+                    as List<SpecialistInfo>,
+        nursingGradeInfoList:
+            null == nursingGradeInfoList
+                ? _value._nursingGradeInfoList
+                : nursingGradeInfoList // ignore: cast_nullable_to_non_nullable
+                    as List<NursingGradeInfo>,
+        specialDiagnosisInfoList:
+            null == specialDiagnosisInfoList
+                ? _value._specialDiagnosisInfoList
+                : specialDiagnosisInfoList // ignore: cast_nullable_to_non_nullable
+                    as List<SpecialDiagnosisInfo>,
       ),
     );
   }
@@ -254,8 +303,14 @@ class _$HospitalImpl implements _Hospital {
     final List<HospitalEvaluation> evaluations = const [],
     final List<NonCoveredPrice> nonCoveredPrices = const [],
     this.reviewStatistics,
+    final List<SpecialistInfo> specialistInfoList = const [],
+    final List<NursingGradeInfo> nursingGradeInfoList = const [],
+    final List<SpecialDiagnosisInfo> specialDiagnosisInfoList = const [],
   }) : _evaluations = evaluations,
-       _nonCoveredPrices = nonCoveredPrices;
+       _nonCoveredPrices = nonCoveredPrices,
+       _specialistInfoList = specialistInfoList,
+       _nursingGradeInfoList = nursingGradeInfoList,
+       _specialDiagnosisInfoList = specialDiagnosisInfoList;
 
   factory _$HospitalImpl.fromJson(Map<String, dynamic> json) =>
       _$$HospitalImplFromJson(json);
@@ -300,10 +355,45 @@ class _$HospitalImpl implements _Hospital {
   // 비급여 가격 목록
   @override
   final ReviewStatistics? reviewStatistics;
+  // 리뷰 통계 (nullable - 리뷰가 없을 수 있음)
+  final List<SpecialistInfo> _specialistInfoList;
+  // 리뷰 통계 (nullable - 리뷰가 없을 수 있음)
+  @override
+  @JsonKey()
+  List<SpecialistInfo> get specialistInfoList {
+    if (_specialistInfoList is EqualUnmodifiableListView)
+      return _specialistInfoList;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_specialistInfoList);
+  }
+
+  // 전문의 정보 목록
+  final List<NursingGradeInfo> _nursingGradeInfoList;
+  // 전문의 정보 목록
+  @override
+  @JsonKey()
+  List<NursingGradeInfo> get nursingGradeInfoList {
+    if (_nursingGradeInfoList is EqualUnmodifiableListView)
+      return _nursingGradeInfoList;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_nursingGradeInfoList);
+  }
+
+  // 간호 등급 정보 목록
+  final List<SpecialDiagnosisInfo> _specialDiagnosisInfoList;
+  // 간호 등급 정보 목록
+  @override
+  @JsonKey()
+  List<SpecialDiagnosisInfo> get specialDiagnosisInfoList {
+    if (_specialDiagnosisInfoList is EqualUnmodifiableListView)
+      return _specialDiagnosisInfoList;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_specialDiagnosisInfoList);
+  }
 
   @override
   String toString() {
-    return 'Hospital(id: $id, name: $name, address: $address, latitude: $latitude, longitude: $longitude, evaluations: $evaluations, nonCoveredPrices: $nonCoveredPrices, reviewStatistics: $reviewStatistics)';
+    return 'Hospital(id: $id, name: $name, address: $address, latitude: $latitude, longitude: $longitude, evaluations: $evaluations, nonCoveredPrices: $nonCoveredPrices, reviewStatistics: $reviewStatistics, specialistInfoList: $specialistInfoList, nursingGradeInfoList: $nursingGradeInfoList, specialDiagnosisInfoList: $specialDiagnosisInfoList)';
   }
 
   @override
@@ -327,7 +417,19 @@ class _$HospitalImpl implements _Hospital {
               _nonCoveredPrices,
             ) &&
             (identical(other.reviewStatistics, reviewStatistics) ||
-                other.reviewStatistics == reviewStatistics));
+                other.reviewStatistics == reviewStatistics) &&
+            const DeepCollectionEquality().equals(
+              other._specialistInfoList,
+              _specialistInfoList,
+            ) &&
+            const DeepCollectionEquality().equals(
+              other._nursingGradeInfoList,
+              _nursingGradeInfoList,
+            ) &&
+            const DeepCollectionEquality().equals(
+              other._specialDiagnosisInfoList,
+              _specialDiagnosisInfoList,
+            ));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -342,6 +444,9 @@ class _$HospitalImpl implements _Hospital {
     const DeepCollectionEquality().hash(_evaluations),
     const DeepCollectionEquality().hash(_nonCoveredPrices),
     reviewStatistics,
+    const DeepCollectionEquality().hash(_specialistInfoList),
+    const DeepCollectionEquality().hash(_nursingGradeInfoList),
+    const DeepCollectionEquality().hash(_specialDiagnosisInfoList),
   );
 
   /// Create a copy of Hospital
@@ -368,6 +473,9 @@ abstract class _Hospital implements Hospital {
     final List<HospitalEvaluation> evaluations,
     final List<NonCoveredPrice> nonCoveredPrices,
     final ReviewStatistics? reviewStatistics,
+    final List<SpecialistInfo> specialistInfoList,
+    final List<NursingGradeInfo> nursingGradeInfoList,
+    final List<SpecialDiagnosisInfo> specialDiagnosisInfoList,
   }) = _$HospitalImpl;
 
   factory _Hospital.fromJson(Map<String, dynamic> json) =
@@ -388,7 +496,13 @@ abstract class _Hospital implements Hospital {
   @override
   List<NonCoveredPrice> get nonCoveredPrices; // 비급여 가격 목록
   @override
-  ReviewStatistics? get reviewStatistics;
+  ReviewStatistics? get reviewStatistics; // 리뷰 통계 (nullable - 리뷰가 없을 수 있음)
+  @override
+  List<SpecialistInfo> get specialistInfoList; // 전문의 정보 목록
+  @override
+  List<NursingGradeInfo> get nursingGradeInfoList; // 간호 등급 정보 목록
+  @override
+  List<SpecialDiagnosisInfo> get specialDiagnosisInfoList;
 
   /// Create a copy of Hospital
   /// with the given fields replaced by the non-null parameter values.

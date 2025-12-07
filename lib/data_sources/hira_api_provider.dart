@@ -3,6 +3,12 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../constants/api_constants.dart';
 import '../models/hospital.dart';
+import '../models/hospital_evaluation.dart';
+import '../models/review_statistics.dart';
+import '../models/specialist_info.dart';
+import '../models/nursing_grade_info.dart';
+import '../models/special_diagnosis_info.dart';
+import 'dart:math';
 
 part 'hira_api_provider.g.dart';
 
@@ -67,8 +73,7 @@ class HiraApiProvider {
 
       if (response.statusCode == 200) {
         print('✅ HIRA API 응답 성공');
-        print('응답 데이터 타입: ${response.data.runtimeType}');
-        print('응답 데이터: ${response.data}');
+        // print('응답 데이터: ${response.data}'); // 로그 과다로 주석 처리
         return _parseHospitalListResponse(response.data);
       } else {
         throw Exception('병원 정보 조회 실패: ${response.statusCode}');
@@ -79,6 +84,126 @@ class HiraApiProvider {
     } catch (e) {
       print('병원 정보 처리 오류: $e');
       throw Exception('병원 정보 처리 오류: $e');
+    }
+  }
+
+  /// 전문과목별 전문의 수 조회
+  Future<List<SpecialistInfo>> getSpecialistInfo(String ykiho) async {
+    return _fetchDetailList<SpecialistInfo>(
+      endpoint: ApiConstants.hiraSpecialistInfoEndpoint,
+      ykiho: ykiho,
+      fromJson: (json) => SpecialistInfo.fromHiraApi(json),
+    );
+  }
+
+  /// 간호등급 정보 조회
+  Future<List<NursingGradeInfo>> getNursingGradeInfo(String ykiho) async {
+    return _fetchDetailList<NursingGradeInfo>(
+      endpoint: ApiConstants.hiraNursingGradeEndpoint,
+      ykiho: ykiho,
+      fromJson: (json) => NursingGradeInfo.fromHiraApi(json),
+    );
+  }
+
+  /// 특수진료 정보 조회
+  Future<List<SpecialDiagnosisInfo>> getSpecialDiagnosisInfo(String ykiho) async {
+    return _fetchDetailList<SpecialDiagnosisInfo>(
+      endpoint: ApiConstants.hiraSpecialDiagnosisEndpoint,
+      ykiho: ykiho,
+      fromJson: (json) => SpecialDiagnosisInfo.fromHiraApi(json),
+    );
+  }
+
+  /// 상세 정보 조회 공통 메소드
+  Future<List<T>> _fetchDetailList<T>({
+    required String endpoint,
+    required String ykiho,
+    required T Function(Map<String, dynamic>) fromJson,
+  }) async {
+    final url = '${ApiConstants.hiraBaseUrl}${ApiConstants.hiraMedicalDetailBaseUrl}$endpoint';
+    try {
+      print('🔍 상세 정보 요청: $url (ykiho: $ykiho)');
+      final queryParams = <String, dynamic>{
+        'ServiceKey': _apiKey,
+        'ykiho': ykiho,
+        'pageNo': '1',
+        'numOfRows': '100', // 충분히 큰 값
+        '_type': 'json',
+      };
+
+      final response = await _dio.get(
+        url,
+        queryParameters: queryParams,
+        options: Options(
+          sendTimeout: Duration(milliseconds: ApiConstants.apiTimeout),
+          receiveTimeout: Duration(milliseconds: ApiConstants.apiTimeout),
+          responseType: ResponseType.json,
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        print('✅ 상세 정보 응답 성공 ($endpoint)');
+        // print('응답 데이터: ${response.data}'); // 디버깅용 로그
+        return _parseDetailListResponse<T>(response.data, fromJson);
+      } else {
+        print('❌ 상세 정보 조회 실패 ($endpoint): ${response.statusCode}');
+        return [];
+      }
+    } catch (e) {
+      print('❌ 상세 정보 처리 오류 ($endpoint): $e');
+      if (e is DioException) {
+        print('DioError [${e.type}]: ${e.message}');
+        print('Response: ${e.response?.data}');
+      }
+      return [];
+    }
+  }
+
+  /// 상세 정보 응답 파싱 공통 메소드
+  List<T> _parseDetailListResponse<T>(
+      dynamic data, T Function(Map<String, dynamic>) fromJson) {
+    try {
+      if (data == null) {
+        print('⚠️ 응답 데이터가 null입니다.');
+        return [];
+      }
+      
+      final response = data['response'];
+      if (response == null) {
+        print('⚠️ response 키가 없습니다. 데이터: $data');
+        return [];
+      }
+
+      final body = response['body'];
+      if (body == null) {
+        print('⚠️ body 키가 없습니다.');
+        return [];
+      }
+
+      final items = body['items'];
+      if (items == null) {
+        print('⚠️ items 키가 없습니다 (데이터 없음).');
+        return [];
+      }
+      
+      if (items is String && items.isEmpty) {
+        return [];
+      }
+
+      final item = items['item'];
+      if (item == null) {
+        print('⚠️ item 키가 없습니다.');
+        return [];
+      }
+
+      final List itemList = item is List ? item : [item];
+      print('✅ ${itemList.length}개의 상세 항목 파싱 성공 (${T.toString()})');
+      
+      return itemList.map((e) => fromJson(e as Map<String, dynamic>)).toList();
+    } catch (e) {
+      print('❌ 상세 정보 파싱 오류 (${T.toString()}): $e');
+      print('데이터: $data');
+      return [];
     }
   }
 
@@ -161,15 +286,19 @@ class HiraApiProvider {
             print('[$i] 좌표 파싱 오류: $e');
           }
 
+          // 더미 평가 및 리뷰 데이터 생성 로직 제거 (실제 데이터 우선)
+          // final dummyEvaluations = _generateDummyEvaluations(hospitalData);
+          // final dummyReview = _generateDummyReview(hospitalData);
+
           final hospital = Hospital(
             id: hospitalData['ykiho']?.toString() ?? 'unknown_$i',
             name: hospitalData['yadmNm']?.toString() ?? '병원명 없음',
             address: hospitalData['addr']?.toString() ?? '주소 정보 없음',
             latitude: latitude,
             longitude: longitude,
-            evaluations: [],
+            evaluations: [], // 더미 데이터 제거
             nonCoveredPrices: [],
-            reviewStatistics: null,
+            reviewStatistics: null, // 더미 데이터 제거
           );
 
           print('[$i] ✅ 병원 생성: ${hospital.name}');
@@ -239,6 +368,9 @@ class HiraApiProvider {
       numOfRows: numOfRows,
     );
   }
+
+  /// 두 지점 간의 거리를 계산합니다 (Haversine formula)
+  // ... (다른 헬퍼 메소드들 있다면 유지)
 }
 
 /// Dio 인스턴스 Provider
@@ -256,6 +388,7 @@ Dio dio(DioRef ref) {
 @riverpod
 HiraApiProvider hiraApiProvider(HiraApiProviderRef ref) {
   final dio = ref.watch(dioProvider);
-  final apiKey = dotenv.env['HIRA_API_KEY'];
+  // 사용자가 명시한 키 이름 우선 사용, 없으면 기존 키 이름 확인
+  final apiKey = dotenv.env['HIRA_ACCOUNT_API_KEY'] ?? dotenv.env['HIRA_API_KEY'];
   return HiraApiProvider(dio, apiKey);
 }

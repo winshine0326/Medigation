@@ -2,6 +2,9 @@ import 'dart:math' show asin, sqrt;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/hospital.dart';
+import '../models/specialist_info.dart';
+import '../models/nursing_grade_info.dart';
+import '../models/special_diagnosis_info.dart';
 import '../data_sources/firebase_provider.dart';
 import '../data_sources/local_db_provider.dart';
 import '../data_sources/hira_api_provider.dart';
@@ -58,6 +61,12 @@ class HospitalRepository {
       // 1. 로컬 캐시 확인
       final cachedHospital = await _localDb.getCachedHospital(hospitalId);
       if (cachedHospital != null) {
+        // 캐시된 데이터가 있지만 상세 정보가 비어있으면 보강 시도
+        if (cachedHospital.specialistInfoList.isEmpty || 
+            cachedHospital.nursingGradeInfoList.isEmpty || 
+            cachedHospital.specialDiagnosisInfoList.isEmpty) {
+           return await enrichHospitalDetails(cachedHospital);
+        }
         return cachedHospital;
       }
 
@@ -69,21 +78,8 @@ class HospitalRepository {
       data['id'] = doc.id;
       var hospital = Hospital.fromJson(data);
 
-      // 3. HIRA API로 평가/가격 데이터 보강 (선택적)
-      // TODO: 평가/가격 API가 추가되면 활성화
-      // 현재는 병원 기본 정보만 조회
-      // try {
-      //   final evaluations = await _hiraApi.getHospitalEvaluations(hospitalId);
-      //   final prices = await _hiraApi.getNonCoveredPrices(hospitalId);
-      //
-      //   hospital = hospital.copyWith(
-      //     evaluations: evaluations.isNotEmpty ? evaluations : hospital.evaluations,
-      //     nonCoveredPrices: prices.isNotEmpty ? prices : hospital.nonCoveredPrices,
-      //   );
-      // } catch (e) {
-      //   // HIRA API 오류는 무시하고 계속 진행
-      //   print('HIRA API 데이터 조회 실패 (무시됨): $e');
-      // }
+      // 3. HIRA API로 데이터 보강
+      hospital = await enrichHospitalDetails(hospital);
 
       // 4. 로컬 캐시에 저장
       await _localDb.cacheHospital(hospital);
@@ -91,6 +87,44 @@ class HospitalRepository {
       return hospital;
     } catch (e) {
       throw Exception('병원 정보를 가져오는데 실패했습니다: $e');
+    }
+  }
+
+  /// HIRA API를 통해 병원 상세 정보를 보강합니다
+  Future<Hospital> enrichHospitalDetails(Hospital hospital) async {
+    try {
+      // 이미 데이터가 있으면 스킵 (선택적)
+      // 여기서는 항상 최신 정보를 가져오도록 시도하거나, 비어있을 때만 가져오도록 할 수 있음
+      // 병렬로 API 호출하여 속도 향상
+      final results = await Future.wait([
+        _hiraApi.getSpecialistInfo(hospital.id),
+        _hiraApi.getNursingGradeInfo(hospital.id),
+        _hiraApi.getSpecialDiagnosisInfo(hospital.id),
+      ]);
+
+      final specialistInfo = results[0] as List<SpecialistInfo>;
+      final nursingGradeInfo = results[1] as List<NursingGradeInfo>;
+      final specialDiagnosisInfo = results[2] as List<SpecialDiagnosisInfo>;
+
+      // 데이터가 없으면 기존 데이터 유지 (또는 빈 리스트)
+      final updatedHospital = hospital.copyWith(
+        specialistInfoList: specialistInfo.isNotEmpty ? specialistInfo : hospital.specialistInfoList,
+        nursingGradeInfoList: nursingGradeInfo.isNotEmpty ? nursingGradeInfo : hospital.nursingGradeInfoList,
+        specialDiagnosisInfoList: specialDiagnosisInfo.isNotEmpty ? specialDiagnosisInfo : hospital.specialDiagnosisInfoList,
+      );
+
+      // 변경사항이 있으면 로컬 DB 업데이트
+      if (specialistInfo.isNotEmpty || nursingGradeInfo.isNotEmpty || specialDiagnosisInfo.isNotEmpty) {
+        await _localDb.cacheHospital(updatedHospital);
+        // Firestore 업데이트는 선택적 (비용 절감 위해 로컬만 업데이트할 수도 있음)
+        // await updateHospital(updatedHospital); 
+      }
+
+      return updatedHospital;
+    } catch (e) {
+      print('병원 상세 정보 보강 실패: $e');
+      // 실패해도 기존 병원 정보 반환
+      return hospital;
     }
   }
 

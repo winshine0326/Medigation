@@ -24,7 +24,7 @@ final dioProvider = AutoDisposeProvider<Dio>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef DioRef = AutoDisposeProviderRef<Dio>;
-String _$hiraApiProviderHash() => r'a260bd2b019862da586db1b28aa624a553b6b3b1';
+String _$hiraApiProviderHash() => r'21c71ae19d54ffa253afadab83ae6f4e32bc5660';
 
 /// HIRA API Provider
 ///
