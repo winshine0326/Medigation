@@ -56,38 +56,46 @@
 
 ---
 
-## Phase 2: 핵심 데이터 모델 구현
+## Phase 2: 핵심 데이터 모델 구현 ✅ (완료)
 
-### 2.1 Hospital 모델
-- [ ] `lib/models/hospital.dart` 생성
-- [ ] Hospital 클래스 정의 (id, name, address, latitude, longitude)
-- [ ] `fromJson`, `toJson` 메서드 구현
-- [ ] 병원 평가 목록 필드 추가
-- [ ] 비급여 가격 목록 필드 추가
-- [ ] 리뷰 통계 필드 추가
+### 2.1 Hospital 모델 ✅
+- [x] `lib/models/hospital.dart` 생성
+- [x] Hospital 클래스 정의 (id, name, address, latitude, longitude)
+- [x] `fromJson`, `toJson` 메서드 구현 (Freezed 사용)
+- [x] 병원 평가 목록 필드 추가
+- [x] 비급여 가격 목록 필드 추가
+- [x] 리뷰 통계 필드 추가
 
-### 2.2 HospitalEvaluation 모델
-- [ ] `lib/models/hospital_evaluation.dart` 생성
-- [ ] HospitalEvaluation 클래스 정의 (평가 항목, 평가 등급)
-- [ ] 생성된 배지 목록 필드 추가
-- [ ] `fromJson`, `toJson` 메서드 구현
+### 2.2 HospitalEvaluation 모델 ✅
+- [x] `lib/models/hospital_evaluation.dart` 생성
+- [x] HospitalEvaluation 클래스 정의 (평가 항목, 평가 등급)
+- [x] 생성된 배지 목록 필드 추가
+- [x] `fromJson`, `toJson` 메서드 구현 (Freezed 사용)
 
-### 2.3 NonReimbursementPrice 모델
-- [ ] `lib/models/non_reimbursement_price.dart` 생성
-- [ ] NonReimbursementPrice 클래스 정의 (항목명, 가격)
-- [ ] `fromJson`, `toJson` 메서드 구현
+### 2.3 NonCoveredPrice 모델 ✅
+- [x] `lib/models/non_covered_price.dart` 생성
+- [x] NonCoveredPrice 클래스 정의 (항목명, 가격)
+- [x] `fromJson`, `toJson` 메서드 구현 (Freezed 사용)
 
-### 2.4 ReviewStatistics 모델
-- [ ] `lib/models/review_statistics.dart` 생성
-- [ ] ReviewStatistics 클래스 정의 (평균 별점, 총 리뷰 개수)
-- [ ] 주요 리뷰 키워드 목록 필드 추가
-- [ ] `fromJson`, `toJson` 메서드 구현
+### 2.4 ReviewStatistics 모델 ✅
+- [x] `lib/models/review_statistics.dart` 생성
+- [x] ReviewStatistics 클래스 정의 (평균 별점, 총 리뷰 개수)
+- [x] 주요 리뷰 키워드 목록 필드 추가
+- [x] `fromJson`, `toJson` 메서드 구현 (Freezed 사용)
 
-### 2.5 Badge 모델
-- [ ] `lib/models/badge.dart` 생성
-- [ ] Badge 클래스 정의 (badge type, label, icon)
-- [ ] 배지 타입 enum 정의 (전문 분야별)
-- [ ] `fromJson`, `toJson` 메서드 구현
+### 2.5 Badge 모델 ✅
+- [x] `lib/models/badge.dart` 생성
+- [x] Badge 클래스 정의 (badge type, label, icon)
+- [x] 배지 타입 enum 정의 (전문 분야별 - 19개 타입)
+- [x] BadgeTypeExtension으로 아이콘 및 색상 매핑 구현
+- [x] `fromJson`, `toJson` 메서드 구현 (Freezed 사용)
+
+**Phase 2 완료 사항:**
+- ✅ 모든 핵심 데이터 모델 구현 완료
+- ✅ Freezed를 사용한 불변 객체 패턴 적용
+- ✅ JSON 직렬화/역직렬화 구현
+- ✅ 19개 전문 분야별 배지 타입 정의
+- ✅ 배지별 아이콘 및 색상 매핑 완료
 
 ---
 
@@ -306,9 +314,9 @@
 
 ## 진행 상황 추적
 
-**현재 단계:** Phase 1 완료 → Phase 2 준비
+**현재 단계:** Phase 2 완료 → Phase 3 시작
 
-**완료율:** 15% (Phase 1 완료)
+**완료율:** 30% (Phase 1, 2 완료)
 
 **완료된 Phase:**
 - ✅ Phase 1: 프로젝트 초기 설정 및 구성 (100% 완료)
@@ -317,13 +325,25 @@
   - ✅ Android/iOS 기본 설정 및 권한 구성
   - ✅ Firebase/Riverpod 초기화 코드 준비
   - ✅ Google Maps API 키 설정 완료
-  - ✅ Firebase 설정 완료 (`flutterfire configure` 실행 완료)
+  - ✅ Firebase 설정 완료 (`firebase_options.dart` 생성)
+  - ✅ Firestore 데이터베이스 생성 완료
+  - ✅ iOS 배포 타겟 14.0으로 업데이트
+  - ✅ Firebase 연결 테스트 완료
+
+- ✅ Phase 2: 핵심 데이터 모델 구현 (100% 완료)
+  - ✅ Hospital, HospitalEvaluation, NonCoveredPrice, ReviewStatistics 모델 구현
+  - ✅ Badge 모델 및 19개 전문 분야 타입 정의
+  - ✅ Freezed를 사용한 불변 객체 패턴 적용
+  - ✅ JSON 직렬화/역직렬화 구현
+  - ✅ 배지별 아이콘 및 색상 매핑 완료
 
 **다음 작업:**
-1. `lib/firebase_options.dart` 파일 확인 (누락 시 `flutterfire configure` 재실행)
-2. Firebase Console에서 Firestore 데이터베이스 생성
-3. Phase 2: 핵심 데이터 모델 구현 시작 (Hospital, HospitalEvaluation, Badge 등)
+1. Phase 3: Data Source Layer 구현
+   - HIRA API Provider (건강보험심사평가원 API 연동)
+   - Firebase Firestore Provider (이미 부분 완료)
+   - Local DB Provider (캐시 시스템)
 
 **최근 업데이트:**
-- 2025-12-07: Firebase 설정 완료 (`flutterfire configure` 실행)
-- 2025-12-01: Google Maps API 키 설정 및 Phase 1 대부분 완료
+- 2025-12-07: Phase 2 완료 - 모든 데이터 모델 구현 및 테스트 완료
+- 2025-12-07: Firebase 설정 완료 및 Firestore 연결 테스트 성공
+- 2025-12-01: Google Maps API 키 설정 및 Phase 1 완료
