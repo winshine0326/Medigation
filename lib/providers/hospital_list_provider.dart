@@ -78,8 +78,11 @@ class HospitalListNotifier extends _$HospitalListNotifier {
       // 첫 페이지 데이터만 로드
       final firstPageHospitals = hospitals.take(_pageSize).toList();
 
+      // 상세 정보 보강 (API 호출)
+      final enrichedHospitals = await _enrichHospitals(repository, firstPageHospitals);
+
       state = state.copyWith(
-        hospitals: firstPageHospitals,
+        hospitals: enrichedHospitals,
         isLoading: false,
         hasMore: hospitals.length > _pageSize,
         currentPage: 1,
@@ -118,8 +121,11 @@ class HospitalListNotifier extends _$HospitalListNotifier {
           .take(_pageSize)
           .toList();
 
+      // 상세 정보 보강 (API 호출)
+      final enrichedNextPageHospitals = await _enrichHospitals(repository, nextPageHospitals);
+
       state = state.copyWith(
-        hospitals: [...state.hospitals, ...nextPageHospitals],
+        hospitals: [...state.hospitals, ...enrichedNextPageHospitals],
         isLoading: false,
         hasMore: endIndex < allHospitals.length,
         currentPage: state.currentPage + 1,
@@ -130,6 +136,34 @@ class HospitalListNotifier extends _$HospitalListNotifier {
         error: e.toString(),
       );
     }
+  }
+
+  /// 병원 목록 상세 정보 보강
+  Future<List<Hospital>> _enrichHospitals(
+      HospitalRepository repository, List<Hospital> hospitals) async {
+    if (hospitals.isEmpty) return [];
+
+    print('병원 목록 ${hospitals.length}개 상세 정보 보강 시작...');
+    
+    // 병렬로 상세 정보 요청
+    final enrichedList = await Future.wait(
+      hospitals.map((hospital) async {
+        try {
+          // 이미 상세 정보가 있는지 확인 (간단한 체크)
+          if (hospital.specialistInfoList.isNotEmpty || 
+              hospital.nursingGradeInfoList.isNotEmpty) {
+            return hospital;
+          }
+          return await repository.enrichHospitalDetails(hospital);
+        } catch (e) {
+          print('병원(${hospital.name}) 상세 정보 보강 실패: $e');
+          return hospital;
+        }
+      }),
+    );
+    
+    print('병원 목록 상세 정보 보강 완료');
+    return enrichedList;
   }
 
   /// 병원 목록 새로고침
@@ -161,12 +195,29 @@ class HospitalListNotifier extends _$HospitalListNotifier {
   }
 
   /// 병원 목록 직접 업데이트 (검색 결과 등)
-  void updateHospitals(List<Hospital> hospitals) {
+  Future<void> updateHospitals(List<Hospital> hospitals) async {
+    // UI 먼저 업데이트 (빠른 응답)
     state = state.copyWith(
       hospitals: hospitals,
+      isLoading: true, // 백그라운드 로딩 표시
       hasMore: false,
       currentPage: 1,
     );
+
+    try {
+      final repository = ref.read(hospitalRepositoryProvider);
+      // 상세 정보 보강
+      final enrichedHospitals = await _enrichHospitals(repository, hospitals);
+      
+      state = state.copyWith(
+        hospitals: enrichedHospitals,
+        isLoading: false,
+      );
+    } catch (e) {
+      // 에러 발생 시 기존 리스트 유지하고 로딩만 끔
+      print('검색 결과 상세 보강 실패: $e');
+      state = state.copyWith(isLoading: false);
+    }
   }
 
   /// 캐시 초기화
