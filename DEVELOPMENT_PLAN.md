@@ -206,42 +206,60 @@
 
 ---
 
-## Phase 6: State Management (Riverpod) 구현
+## Phase 6: State Management (Riverpod) 구현 ✅ (완료)
 
-### 6.1 Provider 설정
-- [ ] `lib/providers/hospital_provider.dart` 생성
-- [ ] HospitalRepository provider 정의
-- [ ] BookmarkRepository provider 정의
+### 6.1 Provider 설정 ✅
+- [x] HospitalRepository provider 정의 (hospital_repository.dart에 이미 구현됨)
+- [x] BookmarkRepository provider 정의 (bookmark_repository.dart에 이미 구현됨)
 
-### 6.2 HospitalListNotifier
-- [ ] `lib/providers/hospital_list_provider.dart` 생성
-- [ ] StateNotifier 클래스 구현
-- [ ] 병원 목록 상태 관리
-- [ ] 로딩/에러 상태 관리
-- [ ] 페이지네이션 로직 구현
+### 6.2 HospitalListNotifier ✅
+- [x] `lib/providers/hospital_list_provider.dart` 생성
+- [x] StateNotifier 클래스 구현 (Riverpod 2.0 AsyncNotifier 사용)
+- [x] 병원 목록 상태 관리 (HospitalListState)
+- [x] 로딩/에러 상태 관리
+- [x] 페이지네이션 로직 구현 (무한 스크롤)
+- [x] 데이터 동기화 및 캐시 초기화 기능
 
-### 6.3 FilterNotifier
-- [ ] `lib/providers/filter_provider.dart` 생성
-- [ ] 필터 상태 관리 (지역, 전문분야, 가격대 등)
-- [ ] 역필터링 상태 관리
-- [ ] 필터 적용 로직 구현
+### 6.3 FilterNotifier ✅
+- [x] `lib/providers/filter_provider.dart` 생성
+- [x] 필터 상태 관리 (지역, 배지, 가격대 등)
+- [x] 역필터링 상태 관리 (최소 리뷰 수, 최소 평점, 제외 등급)
+- [x] 필터 적용 로직 구현
+- [x] FilterCondition 클래스 구현
+- [x] 필터 초기화 기능
 
-### 6.4 SearchNotifier
-- [ ] `lib/providers/search_provider.dart` 생성
-- [ ] 검색어 상태 관리
-- [ ] 검색 결과 상태 관리
-- [ ] 검색 히스토리 관리
+### 6.4 SearchNotifier ✅
+- [x] `lib/providers/search_provider.dart` 생성
+- [x] 검색어 상태 관리
+- [x] 검색 결과 상태 관리
+- [x] 검색 히스토리 관리 (Firestore 연동)
+- [x] 검색 히스토리 추가/삭제/전체 삭제 기능
+- [x] 검색 히스토리 중복 제거 로직
 
-### 6.5 BookmarkNotifier
-- [ ] `lib/providers/bookmark_provider.dart` 생성
-- [ ] 북마크 목록 상태 관리
-- [ ] 북마크 추가/제거 액션 구현
+### 6.5 BookmarkNotifier ✅
+- [x] `lib/providers/bookmark_provider.dart` 생성
+- [x] 북마크 목록 상태 관리
+- [x] 북마크 추가/제거 액션 구현
+- [x] 북마크 토글 기능
+- [x] 북마크 여부 확인 기능
+- [x] 북마크된 병원 상세 정보 로드
 
-### 6.6 LocationNotifier
-- [ ] `lib/providers/location_provider.dart` 생성
-- [ ] 현재 위치 상태 관리
-- [ ] 위치 권한 처리
-- [ ] 위치 기반 병원 정렬 로직
+### 6.6 LocationNotifier ✅
+- [x] `lib/providers/location_provider.dart` 생성
+- [x] 현재 위치 상태 관리
+- [x] 위치 권한 처리 (granted, denied, deniedForever, notDetermined)
+- [x] 위치 기반 병원 정렬 로직
+- [x] 주변 병원 검색 기능
+- [x] 특정 병원까지의 거리 계산 기능
+- [x] 위치 서비스 활성화 확인
+
+**Phase 6 완료 사항:**
+- ✅ Riverpod 2.0 기반 State Management 완전 구현
+- ✅ 6개 핵심 Notifier 구현 (HospitalList, Filter, Search, Bookmark, Location)
+- ✅ 각 Notifier의 상태 관리 클래스 구현
+- ✅ 로딩/에러 처리 로직 포함
+- ✅ build_runner로 코드 생성 완료 (.g.dart 파일 생성)
+- ✅ Repository와의 완전한 통합
 
 ---
 
@@ -359,9 +377,9 @@
 
 ## 진행 상황 추적
 
-**현재 단계:** Phase 5 완료 → Phase 6 시작
+**현재 단계:** Phase 6 완료 → Phase 7 시작
 
-**완료율:** 70% (Phase 1, 2, 3, 4, 5 완료)
+**완료율:** 80% (Phase 1, 2, 3, 4, 5, 6 완료)
 
 **완료된 Phase:**
 - ✅ Phase 1: 프로젝트 초기 설정 및 구성 (100% 완료)
@@ -402,12 +420,21 @@
   - ✅ HiraApiProvider 통합
   - ✅ 18개 테스트 케이스 작성 및 통과
 
+- ✅ Phase 6: State Management (Riverpod) 구현 (100% 완료)
+  - ✅ HospitalListNotifier 구현 (페이지네이션, 무한 스크롤)
+  - ✅ FilterNotifier 구현 (필터 및 역필터링)
+  - ✅ SearchNotifier 구현 (검색 히스토리 관리)
+  - ✅ BookmarkNotifier 구현 (북마크 상태 관리)
+  - ✅ LocationNotifier 구현 (위치 권한 및 주변 병원 검색)
+  - ✅ 모든 Provider 코드 생성 완료 (.g.dart 파일)
+
 **다음 작업:**
-1. Phase 6: State Management (Riverpod) 구현
-2. Phase 7: UI Layer 구현
-3. Phase 8: 핵심 기능 통합
+1. Phase 7: UI Layer 구현
+2. Phase 8: 핵심 기능 통합
+3. Phase 9: 테스팅 및 품질 관리
 
 **최근 업데이트:**
+- 2025-12-07: Phase 6 완료 - Riverpod State Management 전체 구현 완료
 - 2025-12-07: Phase 5 완료 - 배지 번역 시스템 구현 및 테스트 완료
 - 2025-12-07: Phase 4 완료 - Repository Layer 및 캐시 시스템 완성
 - 2025-12-07: Phase 3 완료 - Data Source Layer 구현 완료
