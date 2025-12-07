@@ -88,10 +88,28 @@ class SearchNotifier extends _$SearchNotifier {
 
     try {
       final repository = ref.read(hospitalRepositoryProvider);
-      final results = await repository.searchHospitalsByName(query);
+      
+      // 1. 먼저 로컬/Firestore에서 검색
+      List<Hospital> results = await repository.searchHospitalsByName(query);
+
+      // 2. 결과가 없으면 HIRA API 실시간 검색 시도
+      if (results.isEmpty) {
+        try {
+          print('로컬 검색 결과 없음. HIRA API 검색 시도: $query');
+          results = await repository.searchHospitalsByNameFromHira(
+            hospitalName: query,
+            numOfRows: 20,
+          );
+        } catch (e) {
+          print('HIRA API 검색 실패: $e');
+        }
+      }
+
+      // 3. 검색 결과 상세 정보 보강 (Enrich)
+      final enrichedResults = await _enrichResults(repository, results);
 
       state = state.copyWith(
-        results: results,
+        results: enrichedResults,
         isLoading: false,
       );
 
@@ -103,6 +121,34 @@ class SearchNotifier extends _$SearchNotifier {
         error: e.toString(),
       );
     }
+  }
+
+  /// 검색 결과 상세 정보 보강
+  Future<List<Hospital>> _enrichResults(
+      HospitalRepository repository, List<Hospital> hospitals) async {
+    if (hospitals.isEmpty) return [];
+
+    print('검색 결과 ${hospitals.length}개 상세 정보 보강 시작...');
+    
+    // 병렬로 상세 정보 요청
+    final enrichedList = await Future.wait(
+      hospitals.map((hospital) async {
+        try {
+          // 이미 상세 정보가 있는지 확인
+          if (hospital.specialistInfoList.isNotEmpty || 
+              hospital.nursingGradeInfoList.isNotEmpty) {
+            return hospital;
+          }
+          return await repository.enrichHospitalDetails(hospital);
+        } catch (e) {
+          print('병원(${hospital.name}) 상세 정보 보강 실패: $e');
+          return hospital;
+        }
+      }),
+    );
+    
+    print('검색 결과 상세 정보 보강 완료');
+    return enrichedList;
   }
 
   /// 검색 히스토리에 추가

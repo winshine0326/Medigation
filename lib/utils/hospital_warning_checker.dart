@@ -103,14 +103,18 @@ class HospitalWarningChecker {
 
   /// 역필터링 조건에 맞는지 확인
   ///
-  /// [minRating]: 최소 평점 (기본값: 3.0)
-  /// [minReviews]: 최소 리뷰 수 (기본값: 5)
-  /// [excludeGrades]: 제외할 등급 (예: ['4등급', '5등급'])
+  /// [minRating]: 최소 평점
+  /// [minReviews]: 최소 리뷰 수
+  /// [minNursingGrade]: 최소 간호 등급 (이 숫자 이내여야 함)
+  /// [minSpecialistCount]: 최소 전문의 수
+  /// [minDiagnosisCount]: 최소 특수 진료 수
   static bool passesReverseFilter(
     Hospital hospital, {
     double minRating = 3.0,
     int minReviews = 5,
-    List<String> excludeGrades = const [],
+    int? minNursingGrade,
+    int? minSpecialistCount,
+    int? minDiagnosisCount,
   }) {
     // 평점 체크
     if (hospital.reviewStatistics != null) {
@@ -122,13 +126,36 @@ class HospitalWarningChecker {
       }
     }
 
-    // 등급 체크
-    if (excludeGrades.isNotEmpty) {
-      for (final eval in hospital.evaluations) {
-        if (excludeGrades.any((grade) => eval.grade.contains(grade))) {
-          return false;
+    // 간호 등급 체크
+    if (minNursingGrade != null) {
+      double totalGrade = 0.0;
+      int count = 0;
+      for (final info in hospital.nursingGradeInfoList) {
+        if (['건강보험(환자수)', '건강보험', '의료급여', '의료급여(환자수)'].any((c) => info.typeName.contains(c))) {
+          double grade = 0.0;
+          final gradeStr = info.careGrade.replaceAll(RegExp(r'[^0-9]'), '');
+          if (gradeStr.isNotEmpty) grade = double.tryParse(gradeStr) ?? 0.0;
+          if (grade >= 1.0 && grade <= 7.0) {
+            totalGrade += grade;
+            count++;
+          }
         }
       }
+      if (count == 0 || (totalGrade / count) > minNursingGrade) return false;
+    }
+
+    // 전문의 수 체크
+    if (minSpecialistCount != null) {
+      int totalSpecialists = 0;
+      for (final info in hospital.specialistInfoList) {
+        totalSpecialists += info.specialistCount;
+      }
+      if (totalSpecialists < minSpecialistCount) return false;
+    }
+
+    // 특수 진료 수 체크
+    if (minDiagnosisCount != null) {
+      if (hospital.specialDiagnosisInfoList.length < minDiagnosisCount) return false;
     }
 
     return true;

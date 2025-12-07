@@ -6,7 +6,7 @@ part of 'search_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$searchNotifierHash() => r'c94cbd598ff41dba408413ab1d837827fa9410d9';
+String _$searchNotifierHash() => r'd0ba316e5177b1d91374873aeaac33380660cf11';
 
 /// 검색 Notifier
 /// 검색어 및 검색 히스토리를 관리합니다

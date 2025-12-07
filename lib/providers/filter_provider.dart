@@ -9,7 +9,9 @@ class FilterCondition {
   final List<String> selectedBadgeTypes;
   final int? minReviewCount;
   final double? minRating;
-  final List<String>? excludeGrades;
+  final List<String> selectedTotalGrades; // 선택된 종합 등급 목록 (S, A, B, C, D)
+  final int? minSpecialistCount; // 최소 전문의 수
+  final int? minDiagnosisCount; // 최소 특수 진료 수
   final String? region;
   final double? maxDistance;
 
@@ -17,7 +19,9 @@ class FilterCondition {
     this.selectedBadgeTypes = const [],
     this.minReviewCount,
     this.minRating,
-    this.excludeGrades,
+    this.selectedTotalGrades = const [],
+    this.minSpecialistCount,
+    this.minDiagnosisCount,
     this.region,
     this.maxDistance,
   });
@@ -26,7 +30,9 @@ class FilterCondition {
     List<String>? selectedBadgeTypes,
     int? minReviewCount,
     double? minRating,
-    List<String>? excludeGrades,
+    List<String>? selectedTotalGrades,
+    int? minSpecialistCount,
+    int? minDiagnosisCount,
     String? region,
     double? maxDistance,
   }) {
@@ -34,7 +40,9 @@ class FilterCondition {
       selectedBadgeTypes: selectedBadgeTypes ?? this.selectedBadgeTypes,
       minReviewCount: minReviewCount ?? this.minReviewCount,
       minRating: minRating ?? this.minRating,
-      excludeGrades: excludeGrades ?? this.excludeGrades,
+      selectedTotalGrades: selectedTotalGrades ?? this.selectedTotalGrades,
+      minSpecialistCount: minSpecialistCount ?? this.minSpecialistCount,
+      minDiagnosisCount: minDiagnosisCount ?? this.minDiagnosisCount,
       region: region ?? this.region,
       maxDistance: maxDistance ?? this.maxDistance,
     );
@@ -45,7 +53,9 @@ class FilterCondition {
     return selectedBadgeTypes.isNotEmpty ||
         minReviewCount != null ||
         minRating != null ||
-        (excludeGrades != null && excludeGrades!.isNotEmpty) ||
+        selectedTotalGrades.isNotEmpty ||
+        minSpecialistCount != null ||
+        minDiagnosisCount != null ||
         region != null ||
         maxDistance != null;
   }
@@ -87,7 +97,7 @@ class FilterState {
 
 /// 필터 Notifier
 /// 필터 및 역필터링 상태를 관리합니다
-@riverpod
+@Riverpod(keepAlive: true)
 class FilterNotifier extends _$FilterNotifier {
   @override
   FilterState build() {
@@ -115,9 +125,23 @@ class FilterNotifier extends _$FilterNotifier {
     _applyFilters();
   }
 
-  /// 제외할 등급 설정 (역필터링)
-  void setExcludeGrades(List<String>? grades) {
-    final newCondition = state.condition.copyWith(excludeGrades: grades);
+  /// 선택된 종합 등급 설정
+  void setSelectedTotalGrades(List<String> grades) {
+    final newCondition = state.condition.copyWith(selectedTotalGrades: grades);
+    state = state.copyWith(condition: newCondition);
+    _applyFilters();
+  }
+
+  /// 최소 전문의 수 설정
+  void setMinSpecialistCount(int? count) {
+    final newCondition = state.condition.copyWith(minSpecialistCount: count);
+    state = state.copyWith(condition: newCondition);
+    _applyFilters();
+  }
+
+  /// 최소 특수 진료 수 설정
+  void setMinDiagnosisCount(int? count) {
+    final newCondition = state.condition.copyWith(minDiagnosisCount: count);
     state = state.copyWith(condition: newCondition);
     _applyFilters();
   }
@@ -169,11 +193,13 @@ class FilterNotifier extends _$FilterNotifier {
         );
       }
 
-      // 역필터링 적용
+      // 역필터링 및 새 필터 적용
       hospitals = await repository.filterOutHospitals(
         minReviewCount: state.condition.minReviewCount,
         minRating: state.condition.minRating,
-        excludeGrades: state.condition.excludeGrades,
+        selectedTotalGrades: state.condition.selectedTotalGrades,
+        minSpecialistCount: state.condition.minSpecialistCount,
+        minDiagnosisCount: state.condition.minDiagnosisCount,
       );
 
       // 지역 필터

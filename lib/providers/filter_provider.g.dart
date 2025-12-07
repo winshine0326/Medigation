@@ -6,7 +6,7 @@ part of 'filter_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$filterNotifierHash() => r'7aa7d89b14501c115c734a96b4cc47adcf7830a0';
+String _$filterNotifierHash() => r'c094fad4c509eb90d4dc8ed97140970b63315473';
 
 /// 필터 Notifier
 /// 필터 및 역필터링 상태를 관리합니다
@@ -14,7 +14,7 @@ String _$filterNotifierHash() => r'7aa7d89b14501c115c734a96b4cc47adcf7830a0';
 /// Copied from [FilterNotifier].
 @ProviderFor(FilterNotifier)
 final filterNotifierProvider =
-    AutoDisposeNotifierProvider<FilterNotifier, FilterState>.internal(
+    NotifierProvider<FilterNotifier, FilterState>.internal(
       FilterNotifier.new,
       name: r'filterNotifierProvider',
       debugGetCreateSourceHash:
@@ -25,6 +25,6 @@ final filterNotifierProvider =
       allTransitiveDependencies: null,
     );
 
-typedef _$FilterNotifier = AutoDisposeNotifier<FilterState>;
+typedef _$FilterNotifier = Notifier<FilterState>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/hospital_list_provider.dart';
 import '../providers/bookmark_provider.dart';
 import '../providers/location_provider.dart';
+import '../providers/filter_provider.dart';
 import '../widgets/hospital_card.dart';
 import '../widgets/loading_indicator.dart';
 import '../widgets/error_display.dart';
@@ -49,6 +50,7 @@ class _HospitalListScreenState extends ConsumerState<HospitalListScreen> {
   @override
   Widget build(BuildContext context) {
     final hospitalListState = ref.watch(hospitalListNotifierProvider);
+    final filterState = ref.watch(filterNotifierProvider); // 필터 상태 구독
     final bookmarkState = ref.watch(bookmarkNotifierProvider);
     final locationState = ref.watch(locationNotifierProvider);
 
@@ -63,16 +65,57 @@ class _HospitalListScreenState extends ConsumerState<HospitalListScreen> {
               Navigator.pushNamed(context, '/search');
             },
           ),
-          // 필터 버튼
+          // 필터 버튼 (활성화 시 색상 변경)
           IconButton(
-            icon: const Icon(Icons.filter_list),
+            icon: Icon(
+              Icons.filter_list,
+              color: filterState.condition.isActive ? Colors.blue : null,
+            ),
             onPressed: () {
               Navigator.pushNamed(context, '/filter');
             },
           ),
         ],
       ),
-      body: _buildBody(hospitalListState, bookmarkState, locationState),
+      body: Column(
+        children: [
+          // 필터 적용 중일 때 배너 표시
+          if (filterState.condition.isActive)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              color: Colors.blue[50],
+              child: Row(
+                children: [
+                  const Icon(Icons.filter_alt, size: 16, color: Colors.blue),
+                  const SizedBox(width: 8),
+                  Text(
+                    '필터 적용 중 (${filterState.filteredHospitals.length}개 결과)',
+                    style: const TextStyle(
+                      color: Colors.blue,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () {
+                      ref.read(filterNotifierProvider.notifier).clearFilters();
+                    },
+                    child: const Icon(Icons.close, size: 16, color: Colors.blue),
+                  ),
+                ],
+              ),
+            ),
+          Expanded(
+            child: _buildBody(
+              hospitalListState,
+              filterState,
+              bookmarkState,
+              locationState,
+            ),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           // 현재 위치 기반 검색
@@ -91,9 +134,56 @@ class _HospitalListScreenState extends ConsumerState<HospitalListScreen> {
 
   Widget _buildBody(
     HospitalListState hospitalListState,
+    FilterState filterState,
     BookmarkState bookmarkState,
     LocationState locationState,
   ) {
+    // 필터 적용 중인 경우
+    if (filterState.condition.isActive) {
+      if (filterState.isLoading) {
+        return const LoadingIndicator(message: '필터링 중...');
+      }
+      
+      if (filterState.filteredHospitals.isEmpty) {
+        return const EmptyDisplay(
+          message: '조건에 맞는 병원이 없습니다.',
+          icon: Icons.filter_list_off,
+        );
+      }
+
+      return ListView.builder(
+        itemCount: filterState.filteredHospitals.length,
+        itemBuilder: (context, index) {
+          final hospital = filterState.filteredHospitals[index];
+          final isBookmarked = bookmarkState.isBookmarked(hospital.id);
+          final distance = locationState.hasLocation
+              ? ref
+                  .read(locationNotifierProvider.notifier)
+                  .getDistanceToHospital(hospital)
+              : null;
+
+          return HospitalCard(
+            hospital: hospital,
+            isBookmarked: isBookmarked,
+            distance: distance,
+            onTap: () {
+              Navigator.pushNamed(
+                context,
+                '/hospital-detail',
+                arguments: hospital,
+              );
+            },
+            onBookmarkTap: () {
+              ref
+                  .read(bookmarkNotifierProvider.notifier)
+                  .toggleBookmark(hospital.id);
+            },
+          );
+        },
+      );
+    }
+
+    // 일반 목록 (필터 미적용)
     // 로딩 상태
     if (hospitalListState.isLoading && hospitalListState.hospitals.isEmpty) {
       return const LoadingIndicator(message: '병원 목록을 불러오는 중...');

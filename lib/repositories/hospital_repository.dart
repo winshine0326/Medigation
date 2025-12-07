@@ -8,6 +8,7 @@ import '../models/special_diagnosis_info.dart';
 import '../data_sources/firebase_provider.dart';
 import '../data_sources/local_db_provider.dart';
 import '../data_sources/hira_api_provider.dart';
+import '../utils/hospital_score_calculator.dart';
 
 part 'hospital_repository.g.dart';
 
@@ -222,11 +223,13 @@ class HospitalRepository {
     }
   }
 
-  /// 역필터링: 특정 조건을 만족하지 않는 병원 제외
+  /// 역필터링 및 상세 필터: 특정 조건을 만족하지 않는 병원 제외
   Future<List<Hospital>> filterOutHospitals({
     int? minReviewCount,
     double? minRating,
-    List<String>? excludeGrades,
+    List<String>? selectedTotalGrades, // 선택된 종합 등급 목록 (S, A, B, C, D)
+    int? minSpecialistCount, // 최소 전문의 수
+    int? minDiagnosisCount, // 최소 특수 진료 수
   }) async {
     try {
       final allHospitals = await getAllHospitals();
@@ -246,19 +249,34 @@ class HospitalRepository {
           }
         }
 
-        // 평가 등급 제외
-        if (excludeGrades != null && excludeGrades.isNotEmpty) {
-          for (final evaluation in hospital.evaluations) {
-            if (excludeGrades.contains(evaluation.grade)) {
-              return false; // 제외
-            }
+        // 종합 등급 필터 (다중 선택)
+        if (selectedTotalGrades != null && selectedTotalGrades.isNotEmpty) {
+          final totalScore = HospitalScoreCalculator.calculateTotalScore(hospital);
+          final grade = HospitalScoreCalculator.getScoreGrade(totalScore);
+          
+          if (!selectedTotalGrades.contains(grade)) {
+            return false; // 선택된 등급에 포함되지 않으면 제외
           }
+        }
+
+        // 전문의 수 필터
+        if (minSpecialistCount != null) {
+          int totalSpecialists = 0;
+          for (final info in hospital.specialistInfoList) {
+            totalSpecialists += info.specialistCount;
+          }
+          if (totalSpecialists < minSpecialistCount) return false;
+        }
+
+        // 특수 진료 수 필터
+        if (minDiagnosisCount != null) {
+          if (hospital.specialDiagnosisInfoList.length < minDiagnosisCount) return false;
         }
 
         return true; // 포함
       }).toList();
     } catch (e) {
-      throw Exception('병원 역필터링에 실패했습니다: $e');
+      throw Exception('병원 필터링에 실패했습니다: $e');
     }
   }
 
