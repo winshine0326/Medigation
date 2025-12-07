@@ -6,96 +6,168 @@ import 'package:medigation/models/nursing_grade_info.dart';
 /// 병원의 종합 점수를 계산하는 유틸리티 클래스
 ///
 /// 가중치:
-/// - 평가 데이터 (HIRA): 30%
-/// - 리뷰 통계 (네이버/카카오): 30%
-/// - 배지: 20%
-/// - 상세 정보 (전문의/간호등급/특수진료): 20%
+/// - 간호 등급 (Quality): 40%
+/// - 의료 규모/인프라 (Quantity - 전문의/특수진료): 20%
+/// - 배지 (Specialty): 20%
+/// - 리뷰 통계 (Satisfaction): 20%
 class HospitalScoreCalculator {
-  // 가중치 상수 제거 (동적 가중치 사용)
-
   /// 병원의 종합 점수 계산 (0.0 ~ 100.0)
   static double calculateTotalScore(Hospital hospital) {
     // 데이터 유무 확인
-    final hasEvaluations = hospital.evaluations.isNotEmpty;
     final hasReviews = hospital.reviewStatistics != null && hospital.reviewStatistics!.totalReviewCount > 0;
-    final hasDetailedInfo = hospital.specialistInfoList.isNotEmpty || 
-                           hospital.nursingGradeInfoList.isNotEmpty || 
-                           hospital.specialDiagnosisInfoList.isNotEmpty;
+    // 간호 등급 데이터 유무
+    final hasNursing = hospital.nursingGradeInfoList.isNotEmpty;
+    // 규모 데이터 유무
+    final hasCapacity = hospital.specialistInfoList.isNotEmpty || hospital.specialDiagnosisInfoList.isNotEmpty;
 
     // 점수 계산
-    final evaluationScore = _calculateEvaluationScore(hospital.evaluations);
-    final reviewScore = _calculateReviewScore(hospital.reviewStatistics);
+    final nursingScore = _calculateNursingScore(hospital);
+    final capacityScore = _calculateCapacityScore(hospital);
     final badgeScore = _calculateBadgeScore(hospital.evaluations);
-    final detailInfoScore = _calculateDetailedInfoScore(hospital);
+    final reviewScore = _calculateReviewScore(hospital.reviewStatistics);
 
-    // 동적 가중치 계산
-    double evalWeight = 0.0;
-    double reviewWeight = 0.0;
-    double badgeWeight = 0.0;
-    double detailWeight = 0.0;
+    // 가중치 설정
+    double nursingWeight = 0.4;
+    double capacityWeight = 0.2;
+    double badgeWeight = 0.2;
+    double reviewWeight = 0.2;
 
-    if (hasEvaluations && hasReviews) {
-      // 모든 데이터가 있는 경우 (기존 로직)
-      evalWeight = 0.3;
-      reviewWeight = 0.3;
-      badgeWeight = 0.2;
-      detailWeight = 0.2;
-    } else if (hasDetailedInfo) {
-      // 상세 정보만 있는 경우 (API 연동 병원)
-      // 평가/리뷰가 없으면 상세 정보에 몰아주기
-      detailWeight = 0.8;
-      // 나머지는 기본 점수나 미미한 가중치
-      evalWeight = 0.1;
-      reviewWeight = 0.1;
-      badgeWeight = 0.0; 
+    // 리뷰 데이터가 없는 경우 가중치 재분배
+    if (!hasReviews) {
+      reviewWeight = 0.0;
+      // 리뷰 비중을 간호 등급과 규모에 나눠줌
+      nursingWeight += 0.1; // 0.5
+      capacityWeight += 0.1; // 0.3
+    }
+
+    // 간호 등급 데이터가 없는 경우 (매우 드뭄)
+    if (!hasNursing) {
+      nursingWeight = 0.0;
+      capacityWeight += 0.2;
+      badgeWeight += 0.2;
+    }
+
+    // 규모 데이터가 없는 경우
+    if (!hasCapacity) {
+      capacityWeight = 0.0;
+      nursingWeight += 0.2;
+    }
+
+    // 가중치 정규화 (합이 1.0이 되도록)
+    double totalWeight = nursingWeight + capacityWeight + badgeWeight + reviewWeight;
+    if (totalWeight > 0) {
+      nursingWeight /= totalWeight;
+      capacityWeight /= totalWeight;
+      badgeWeight /= totalWeight;
+      reviewWeight /= totalWeight;
     } else {
-      // 데이터가 거의 없는 경우 (기본값)
+      // 데이터가 하나도 없으면 기본값
       return 50.0;
     }
 
-    // 가중치 재조정 (합이 1.0이 되도록)
-    double totalWeight = evalWeight + reviewWeight + badgeWeight + detailWeight;
-    if (totalWeight > 0) {
-      evalWeight /= totalWeight;
-      reviewWeight /= totalWeight;
-      badgeWeight /= totalWeight;
-      detailWeight /= totalWeight;
-    }
-
-    return (evaluationScore * evalWeight) +
-        (reviewScore * reviewWeight) +
+    return (nursingScore * nursingWeight) +
+        (capacityScore * capacityWeight) +
         (badgeScore * badgeWeight) +
-        (detailInfoScore * detailWeight);
+        (reviewScore * reviewWeight);
   }
 
-  /// 평가 데이터 점수 계산 (0.0 ~ 100.0)
-  static double _calculateEvaluationScore(List<HospitalEvaluation> evaluations) {
-    if (evaluations.isEmpty) return 50.0; // 데이터 없으면 중간값
+  /// 간호 등급 점수 계산 (0.0 ~ 100.0)
+  /// 4가지 주요 항목(건강보험(환자수), 건강보험, 의료급여, 의료급여(환자수))의 평균 등급을 기반으로 계산
+  static double _calculateNursingScore(Hospital hospital) {
+    if (hospital.nursingGradeInfoList.isEmpty) return 50.0; // 기본값
 
-    double totalScore = 0.0;
+    final targetCategories = [
+      '건강보험(환자수)',
+      '건강보험',
+      '의료급여',
+      '의료급여(환자수)'
+    ];
+
+    double totalGrade = 0.0;
     int count = 0;
 
-    for (final eval in evaluations) {
-      final grade = eval.grade;
-      double score = 50.0; // 기본값
+    for (final info in hospital.nursingGradeInfoList) {
+      // 대상 카테고리인지 확인 (부분 일치 허용 또는 정확한 일치)
+      // API 응답의 tyCdNm이 정확하지 않을 수 있으므로 포함 여부로 체크하는 것이 안전할 수 있으나,
+      // 여기서는 최대한 정확도를 위해 리스트에 있는 항목과 매칭 시도
+      if (targetCategories.any((category) => info.typeName.contains(category))) {
+        double grade = 0.0;
+        
+        // 등급 파싱 (S, A, B 또는 숫자)
+        if (info.careGrade.toUpperCase().contains('S')) {
+          grade = 1.0;
+        } else if (info.careGrade.toUpperCase().contains('A')) {
+          grade = 2.0;
+        } else if (info.careGrade.toUpperCase().contains('B')) {
+          grade = 3.0;
+        } else {
+          // 숫자 추출
+          final gradeStr = info.careGrade.replaceAll(RegExp(r'[^0-9]'), '');
+          if (gradeStr.isNotEmpty) {
+            grade = double.tryParse(gradeStr) ?? 0.0;
+          }
+        }
 
-      if (grade.contains('1등급')) {
-        score = 100.0;
-      } else if (grade.contains('2등급')) {
-        score = 80.0;
-      } else if (grade.contains('3등급')) {
-        score = 60.0;
-      } else if (grade.contains('4등급')) {
-        score = 40.0;
-      } else if (grade.contains('5등급')) {
-        score = 20.0;
+        // 유효한 등급(1~7)인 경우 합산
+        if (grade >= 1.0 && grade <= 7.0) {
+          totalGrade += grade;
+          count++;
+        }
       }
-
-      totalScore += score;
-      count++;
     }
 
-    return count > 0 ? totalScore / count : 50.0;
+    if (count == 0) return 50.0; // 유효한 데이터 없음
+
+    final averageGrade = totalGrade / count;
+
+    // 점수 환산 (1등급=100점, 7등급=10점)
+    // 등급이 낮을수록(숫자가 클수록) 점수가 낮아짐
+    // 공식: 100 - ((등급 - 1) * 15)
+    // 예: 1등급 -> 100 - 0 = 100
+    // 예: 4등급 -> 100 - 45 = 55
+    // 예: 7등급 -> 100 - 90 = 10
+    double score = 100.0 - ((averageGrade - 1.0) * 15.0);
+    
+    return score.clamp(0.0, 100.0);
+  }
+
+  /// 의료 규모/인프라 점수 계산 (0.0 ~ 100.0)
+  /// 전문의 수 + 특수 진료 가능 분야 수
+  static double _calculateCapacityScore(Hospital hospital) {
+    if (hospital.specialistInfoList.isEmpty && hospital.specialDiagnosisInfoList.isEmpty) {
+      return 0.0; // 데이터 없음
+    }
+
+    // 1. 전문의 수 점수 (50%)
+    double specialistScore = 0.0;
+    int totalSpecialists = 0;
+    for (final info in hospital.specialistInfoList) {
+      totalSpecialists += info.specialistCount;
+    }
+
+    if (totalSpecialists > 50) specialistScore = 100.0;
+    else if (totalSpecialists > 20) specialistScore = 80.0;
+    else if (totalSpecialists > 10) specialistScore = 60.0;
+    else if (totalSpecialists > 5) specialistScore = 40.0;
+    else if (totalSpecialists > 0) specialistScore = 20.0;
+
+    // 2. 특수 진료 점수 (50%)
+    double diagnosisScore = 0.0;
+    final count = hospital.specialDiagnosisInfoList.length;
+    
+    if (count >= 5) diagnosisScore = 100.0;
+    else if (count >= 3) diagnosisScore = 80.0;
+    else if (count >= 2) diagnosisScore = 60.0;
+    else if (count >= 1) diagnosisScore = 40.0;
+
+    // 두 점수 합산 (둘 중 하나만 있어도 점수 반영)
+    if (hospital.specialistInfoList.isNotEmpty && hospital.specialDiagnosisInfoList.isNotEmpty) {
+      return (specialistScore + diagnosisScore) / 2.0;
+    } else if (hospital.specialistInfoList.isNotEmpty) {
+      return specialistScore;
+    } else {
+      return diagnosisScore;
+    }
   }
 
   /// 리뷰 통계 점수 계산 (0.0 ~ 100.0)
@@ -165,71 +237,23 @@ class HospitalScoreCalculator {
     return (badgeCountScore + specialtyBonus).clamp(0.0, 100.0);
   }
 
-  /// 상세 정보 점수 계산 (0.0 ~ 100.0)
-  static double _calculateDetailedInfoScore(Hospital hospital) {
-    // 데이터가 하나도 없으면 중간값 (기존 평가 방식과의 호환성)
-    if (hospital.specialistInfoList.isEmpty &&
-        hospital.nursingGradeInfoList.isEmpty &&
-        hospital.specialDiagnosisInfoList.isEmpty) {
-      return 50.0;
+  /// 평가 데이터 점수 계산 (Deprecated but kept for badges)
+  static double _calculateEvaluationScore(List<HospitalEvaluation> evaluations) {
+    if (evaluations.isEmpty) return 50.0;
+    double totalScore = 0.0;
+    int count = 0;
+    for (final eval in evaluations) {
+      final grade = eval.grade;
+      double score = 50.0;
+      if (grade.contains('1등급')) score = 100.0;
+      else if (grade.contains('2등급')) score = 80.0;
+      else if (grade.contains('3등급')) score = 60.0;
+      else if (grade.contains('4등급')) score = 40.0;
+      else if (grade.contains('5등급')) score = 20.0;
+      totalScore += score;
+      count++;
     }
-
-    // 1. 간호 등급 점수 (40%)
-    double nursingScore = 50.0; // 기본값
-    if (hospital.nursingGradeInfoList.isNotEmpty) {
-      // 가장 좋은 등급 찾기
-      int bestGrade = 9; // 큰 값으로 초기화
-      bool found = false;
-      
-      for (final info in hospital.nursingGradeInfoList) {
-        final gradeStr = info.careGrade.replaceAll(RegExp(r'[^0-9]'), '');
-        if (gradeStr.isNotEmpty) {
-          final grade = int.tryParse(gradeStr);
-          if (grade != null && grade < bestGrade) {
-            bestGrade = grade;
-            found = true;
-          }
-        }
-      }
-
-      if (found) {
-        if (bestGrade == 1) nursingScore = 100.0;
-        else if (bestGrade == 2) nursingScore = 80.0;
-        else if (bestGrade == 3) nursingScore = 60.0;
-        else if (bestGrade == 4) nursingScore = 40.0;
-        else nursingScore = 20.0;
-      }
-    }
-
-    // 2. 전문의 수 점수 (30%)
-    double specialistScore = 0.0;
-    if (hospital.specialistInfoList.isNotEmpty) {
-      int totalSpecialists = 0;
-      for (final info in hospital.specialistInfoList) {
-        totalSpecialists += info.specialistCount;
-      }
-
-      if (totalSpecialists > 50) specialistScore = 100.0;
-      else if (totalSpecialists > 20) specialistScore = 80.0;
-      else if (totalSpecialists > 10) specialistScore = 60.0;
-      else if (totalSpecialists > 5) specialistScore = 40.0;
-      else if (totalSpecialists > 0) specialistScore = 20.0;
-    }
-
-    // 3. 특수 진료 점수 (30%)
-    double diagnosisScore = 0.0;
-    if (hospital.specialDiagnosisInfoList.isNotEmpty) {
-      final count = hospital.specialDiagnosisInfoList.length;
-      if (count >= 5) diagnosisScore = 100.0;
-      else if (count >= 3) diagnosisScore = 80.0;
-      else if (count >= 2) diagnosisScore = 60.0;
-      else if (count >= 1) diagnosisScore = 40.0;
-    }
-
-    // 항목별 가중치 적용
-    // 데이터가 없는 항목은 0점 처리되므로, 데이터가 풍부할수록 점수가 높아짐
-    // 다만 간호등급은 필수적인 경우가 많아 기본값 50을 줌
-    return (nursingScore * 0.4) + (specialistScore * 0.3) + (diagnosisScore * 0.3);
+    return count > 0 ? totalScore / count : 50.0;
   }
 
   /// 점수 등급 반환 (S, A, B, C, D)
@@ -254,20 +278,16 @@ class HospitalScoreCalculator {
   static double calculateDataCompleteness(Hospital hospital) {
     double completeness = 0.0;
 
-    // 상세 정보 (전문의/간호/특수) - 가장 중요한 데이터로 취급 (60점)
-    if (hospital.specialistInfoList.isNotEmpty || 
-        hospital.nursingGradeInfoList.isNotEmpty || 
-        hospital.specialDiagnosisInfoList.isNotEmpty) {
-      completeness += 60.0;
-    }
+    // 간호 등급 (40점)
+    if (hospital.nursingGradeInfoList.isNotEmpty) completeness += 40.0;
 
-    // 평가 데이터 (20점)
+    // 의료 규모 (30점)
+    if (hospital.specialistInfoList.isNotEmpty || hospital.specialDiagnosisInfoList.isNotEmpty) completeness += 30.0;
+
+    // 평가/배지 데이터 (20점)
     if (hospital.evaluations.isNotEmpty) completeness += 20.0;
 
-    // 비급여 가격 데이터 (10점)
-    if (hospital.nonCoveredPrices.isNotEmpty) completeness += 10.0;
-
-    // 리뷰 통계 데이터 (10점)
+    // 리뷰 데이터 (10점)
     if (hospital.reviewStatistics != null &&
         hospital.reviewStatistics!.totalReviewCount > 0) completeness += 10.0;
 
@@ -286,51 +306,54 @@ class HospitalScoreCalculator {
   /// 종합 리포트 생성
   static HospitalScoreReport generateReport(Hospital hospital) {
     // 데이터 유무 확인
-    final hasEvaluations = hospital.evaluations.isNotEmpty;
     final hasReviews = hospital.reviewStatistics != null && hospital.reviewStatistics!.totalReviewCount > 0;
-    final hasDetailedInfo = hospital.specialistInfoList.isNotEmpty || 
-                           hospital.nursingGradeInfoList.isNotEmpty || 
-                           hospital.specialDiagnosisInfoList.isNotEmpty;
+    final hasNursing = hospital.nursingGradeInfoList.isNotEmpty;
+    final hasCapacity = hospital.specialistInfoList.isNotEmpty || hospital.specialDiagnosisInfoList.isNotEmpty;
 
-    // 가중치 계산 (calculateTotalScore와 동일한 로직)
-    double evalWeight = 0.0;
-    double reviewWeight = 0.0;
-    double badgeWeight = 0.0;
-    double detailWeight = 0.0;
+    // 가중치 설정
+    double nursingWeight = 0.4;
+    double capacityWeight = 0.2;
+    double badgeWeight = 0.2;
+    double reviewWeight = 0.2;
 
-    if (hasEvaluations && hasReviews) {
-      evalWeight = 0.3;
-      reviewWeight = 0.3;
-      badgeWeight = 0.2;
-      detailWeight = 0.2;
-    } else if (hasDetailedInfo) {
-      detailWeight = 0.8;
-      evalWeight = 0.1;
-      reviewWeight = 0.1;
-      badgeWeight = 0.0; 
+    // 리뷰 데이터가 없는 경우 가중치 재분배
+    if (!hasReviews) {
+      reviewWeight = 0.0;
+      nursingWeight += 0.1;
+      capacityWeight += 0.1;
     }
 
-    // 정규화
-    double totalWeight = evalWeight + reviewWeight + badgeWeight + detailWeight;
+    if (!hasNursing) {
+      nursingWeight = 0.0;
+      capacityWeight += 0.2;
+      badgeWeight += 0.2;
+    }
+
+    if (!hasCapacity) {
+      capacityWeight = 0.0;
+      nursingWeight += 0.2;
+    }
+
+    double totalWeight = nursingWeight + capacityWeight + badgeWeight + reviewWeight;
     if (totalWeight > 0) {
-      evalWeight /= totalWeight;
-      reviewWeight /= totalWeight;
+      nursingWeight /= totalWeight;
+      capacityWeight /= totalWeight;
       badgeWeight /= totalWeight;
-      detailWeight /= totalWeight;
+      reviewWeight /= totalWeight;
     }
 
     return HospitalScoreReport(
       hospital: hospital,
       totalScore: calculateTotalScore(hospital),
-      evaluationScore: _calculateEvaluationScore(hospital.evaluations),
-      reviewScore: _calculateReviewScore(hospital.reviewStatistics),
+      nursingScore: _calculateNursingScore(hospital),
+      capacityScore: _calculateCapacityScore(hospital),
       badgeScore: _calculateBadgeScore(hospital.evaluations),
-      detailInfoScore: _calculateDetailedInfoScore(hospital),
+      reviewScore: _calculateReviewScore(hospital.reviewStatistics),
       dataCompleteness: calculateDataCompleteness(hospital),
-      evalWeight: evalWeight,
-      reviewWeight: reviewWeight,
+      nursingWeight: nursingWeight,
+      capacityWeight: capacityWeight,
       badgeWeight: badgeWeight,
-      detailWeight: detailWeight,
+      reviewWeight: reviewWeight,
     );
   }
 }
@@ -339,30 +362,30 @@ class HospitalScoreCalculator {
 class HospitalScoreReport {
   final Hospital hospital;
   final double totalScore; // 종합 점수
-  final double evaluationScore; // 평가 점수
-  final double reviewScore; // 리뷰 점수
+  final double nursingScore; // 간호 등급 점수
+  final double capacityScore; // 의료 규모 점수 (전문의/특수진료)
   final double badgeScore; // 배지 점수
-  final double detailInfoScore; // 상세 정보 점수
+  final double reviewScore; // 리뷰 점수
   final double dataCompleteness; // 데이터 완성도
 
   // 적용된 가중치
-  final double evalWeight;
-  final double reviewWeight;
+  final double nursingWeight;
+  final double capacityWeight;
   final double badgeWeight;
-  final double detailWeight;
+  final double reviewWeight;
 
   HospitalScoreReport({
     required this.hospital,
     required this.totalScore,
-    required this.evaluationScore,
-    required this.reviewScore,
+    required this.nursingScore,
+    required this.capacityScore,
     required this.badgeScore,
-    required this.detailInfoScore,
+    required this.reviewScore,
     required this.dataCompleteness,
-    required this.evalWeight,
-    required this.reviewWeight,
+    required this.nursingWeight,
+    required this.capacityWeight,
     required this.badgeWeight,
-    required this.detailWeight,
+    required this.reviewWeight,
   });
 
   /// 종합 등급 (S, A, B, C, D)
@@ -375,19 +398,18 @@ class HospitalScoreReport {
   String get dataCompletenessText =>
       HospitalScoreCalculator.getDataCompletenessText(dataCompleteness);
 
-  /// 평가 데이터 기여도 (백분율)
-  double get evaluationContribution => evaluationScore * evalWeight;
+  /// 간호 점수 기여도 (백분율)
+  double get nursingContribution => nursingScore * nursingWeight;
 
-  /// 리뷰 데이터 기여도 (백분율)
-  double get reviewContribution => reviewScore * reviewWeight;
+  /// 규모 점수 기여도 (백분율)
+  double get capacityContribution => capacityScore * capacityWeight;
 
   /// 배지 데이터 기여도 (백분율)
   double get badgeContribution => badgeScore * badgeWeight;
   
-  /// 상세 정보 기여도 (백분율)
-  double get detailInfoContribution => detailInfoScore * detailWeight;
+  /// 리뷰 데이터 기여도 (백분율)
+  double get reviewContribution => reviewScore * reviewWeight;
 
-  // ... (나머지 getter는 동일)
   /// 신뢰도 점수 (데이터 완성도 기반, 0-100)
   double get reliabilityScore => dataCompleteness;
 

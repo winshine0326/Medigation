@@ -5,7 +5,6 @@ import '../providers/bookmark_provider.dart';
 import '../providers/location_provider.dart';
 import '../repositories/hospital_repository.dart';
 import '../widgets/badge_chip.dart';
-import '../widgets/rating_display.dart';
 import '../utils/hospital_score_calculator.dart';
 import '../utils/review_link_generator.dart';
 
@@ -115,18 +114,6 @@ class _HospitalDetailScreenState extends ConsumerState<HospitalDetailScreen> {
                       _hospital.nursingGradeInfoList.isNotEmpty ||
                       _hospital.specialDiagnosisInfoList.isNotEmpty) ...[
                     _buildDetailInfoSection(context),
-                    const Divider(height: 1),
-                  ],
-
-                  // 리뷰 통계 섹션
-                  if (_hospital.reviewStatistics != null) ...[
-                    _buildReviewSection(context),
-                    const Divider(height: 1),
-                  ],
-
-                  // 평가 데이터 섹션
-                  if (_hospital.evaluations.isNotEmpty) ...[
-                    _buildEvaluationSection(context),
                     const Divider(height: 1),
                   ],
 
@@ -252,7 +239,7 @@ class _HospitalDetailScreenState extends ConsumerState<HospitalDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            '병원 상세 정보',
+            '간호등급 및 전문정보',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -260,38 +247,7 @@ class _HospitalDetailScreenState extends ConsumerState<HospitalDetailScreen> {
           ),
           const SizedBox(height: 16),
 
-          // 1. 전문의 정보
-          if (_hospital.specialistInfoList.isNotEmpty) ...[
-            const Text(
-              '전문의 현황',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _hospital.specialistInfoList.map((info) {
-                return Chip(
-                  label: Text('${info.specialtyName} ${info.specialistCount}명'),
-                  backgroundColor: Colors.blue[50],
-                  labelStyle: TextStyle(
-                    color: Colors.blue[900],
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  padding: const EdgeInsets.all(0),
-                  visualDensity: VisualDensity.compact,
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 16),
-          ],
-
-          // 2. 간호 등급 정보
+          // 1. 간호 등급 정보 (우선순위 상향)
           if (_hospital.nursingGradeInfoList.isNotEmpty) ...[
             const Text(
               '간호 등급',
@@ -324,6 +280,37 @@ class _HospitalDetailScreenState extends ConsumerState<HospitalDetailScreen> {
                       ),
                     ],
                   ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // 2. 전문의 정보
+          if (_hospital.specialistInfoList.isNotEmpty) ...[
+            const Text(
+              '전문의 현황',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _hospital.specialistInfoList.map((info) {
+                return Chip(
+                  label: Text('${info.specialtyName} ${info.specialistCount}명'),
+                  backgroundColor: Colors.blue[50],
+                  labelStyle: TextStyle(
+                    color: Colors.blue[900],
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  padding: const EdgeInsets.all(0),
+                  visualDensity: VisualDensity.compact,
                 );
               }).toList(),
             ),
@@ -363,152 +350,6 @@ class _HospitalDetailScreenState extends ConsumerState<HospitalDetailScreen> {
               }).toList(),
             ),
           ],
-        ],
-      ),
-    );
-  }
-
-  /// 리뷰 통계 섹션
-  Widget _buildReviewSection(BuildContext context) {
-    final review = _hospital.reviewStatistics!;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            '리뷰 통계',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // 평점
-          RatingDisplay(
-            rating: review.averageRating,
-            reviewCount: review.totalReviewCount,
-            starSize: 24,
-            ratingTextStyle: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-
-          // 주요 키워드
-          if (review.keywords.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            const Text(
-              '주요 키워드',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: review.keywords
-                  .map(
-                    (keyword) => Chip(
-                      label: Text(keyword),
-                      backgroundColor: Colors.grey[100],
-                      labelStyle: const TextStyle(fontSize: 12),
-                    ),
-                  )
-                  .toList(),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  /// 평가 데이터 섹션
-  Widget _buildEvaluationSection(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            '병원 평가 정보',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 12),
-          ..._hospital.evaluations.map((evaluation) {
-            return Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 평가 항목명
-                    Text(
-                      evaluation.evaluationItem,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-
-                    // 평가 등급
-                    Row(
-                      children: [
-                        const Text(
-                          '등급: ',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _getGradeColor(evaluation.grade),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            evaluation.grade,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    // 배지
-                    if (evaluation.badges.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: evaluation.badges
-                            .map((badge) => SimpleBadgeChip(label: badge))
-                            .toList(),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            );
-          }).toList(),
         ],
       ),
     );
@@ -609,22 +450,6 @@ class _HospitalDetailScreenState extends ConsumerState<HospitalDetailScreen> {
         ],
       ),
     );
-  }
-
-  /// 등급에 따른 색상 반환
-  Color _getGradeColor(String grade) {
-    if (grade.contains('1등급')) {
-      return Colors.green;
-    } else if (grade.contains('2등급')) {
-      return Colors.lightGreen;
-    } else if (grade.contains('3등급')) {
-      return Colors.orange;
-    } else if (grade.contains('4등급')) {
-      return Colors.deepOrange;
-    } else if (grade.contains('5등급')) {
-      return Colors.red;
-    }
-    return Colors.grey;
   }
 
   /// 가격 포맷팅 (천 단위 구분)
@@ -741,36 +566,36 @@ class _HospitalDetailScreenState extends ConsumerState<HospitalDetailScreen> {
           ),
           const SizedBox(height: 12),
 
-          // 평가 데이터 (가중치 > 0 인 경우에만 표시)
-          if (report.evalWeight > 0.05) ...[
+          // 1. 간호 등급
+          if (report.nursingWeight > 0.05) ...[
             _buildScoreItem(
-              '평가 데이터',
-              report.evaluationScore,
-              report.evaluationContribution,
-              Icons.assessment,
+              '간호 등급 (의료 질)',
+              report.nursingScore,
+              report.nursingContribution,
+              Icons.health_and_safety,
               Colors.blue,
-              report.evalWeight,
+              report.nursingWeight,
             ),
             const SizedBox(height: 8),
           ],
 
-          // 리뷰 통계 (가중치 > 0 인 경우에만 표시)
-          if (report.reviewWeight > 0.05) ...[
+          // 2. 의료 규모/인프라
+          if (report.capacityWeight > 0.05) ...[
             _buildScoreItem(
-              '리뷰 통계',
-              report.reviewScore,
-              report.reviewContribution,
-              Icons.star,
-              Colors.orange,
-              report.reviewWeight,
+              '의료 규모/인프라 (전문의/특수진료)',
+              report.capacityScore,
+              report.capacityContribution,
+              Icons.domain,
+              Colors.purple,
+              report.capacityWeight,
             ),
             const SizedBox(height: 8),
           ],
 
-          // 배지 (가중치 > 0 인 경우에만 표시)
+          // 3. 전문 분야 (배지)
           if (report.badgeWeight > 0.05) ...[
             _buildScoreItem(
-              '전문 분야',
+              '전문 분야 (특화)',
               report.badgeScore,
               report.badgeContribution,
               Icons.verified,
@@ -780,15 +605,15 @@ class _HospitalDetailScreenState extends ConsumerState<HospitalDetailScreen> {
             const SizedBox(height: 8),
           ],
 
-          // 상세 정보 (가중치 > 0 인 경우에만 표시)
-          if (report.detailWeight > 0.05) ...[
+          // 4. 리뷰 통계
+          if (report.reviewWeight > 0.05) ...[
             _buildScoreItem(
-              '상세 정보 (전문의/간호 등)',
-              report.detailInfoScore,
-              report.detailInfoContribution,
-              Icons.list_alt,
-              Colors.purple,
-              report.detailWeight,
+              '사용자 리뷰 (만족도)',
+              report.reviewScore,
+              report.reviewContribution,
+              Icons.star,
+              Colors.orange,
+              report.reviewWeight,
             ),
           ],
         ],
