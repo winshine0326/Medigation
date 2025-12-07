@@ -4,6 +4,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../constants/api_constants.dart';
 import '../models/hospital_evaluation.dart';
 import '../models/non_covered_price.dart';
+import '../utils/badge_generator.dart';
 
 part 'hira_api_provider.g.dart';
 
@@ -69,43 +70,19 @@ class HiraApiProvider {
       final List itemList = items is List ? items : [items];
 
       return itemList.map((item) {
+        final evaluationItem = item['evlItem'] ?? '평가 항목';
+        final grade = item['evlGrade'] ?? '등급 정보 없음';
+
         return HospitalEvaluation(
-          evaluationItem: item['evlItem'] ?? '평가 항목',
-          grade: item['evlGrade'] ?? '등급 정보 없음',
-          badges: _generateBadgesFromEvaluation(
-            item['evlItem'] ?? '',
-            item['evlGrade'] ?? '',
-          ),
+          evaluationItem: evaluationItem,
+          grade: grade,
+          badges: BadgeGenerator.generateBadgeLabels(evaluationItem, grade),
         );
       }).toList();
     } catch (e) {
       print('평가 데이터 파싱 오류: $e');
       return [];
     }
-  }
-
-  /// 평가 데이터로부터 배지 생성
-  /// 나중에 badge_generator.dart로 분리 예정
-  List<String> _generateBadgesFromEvaluation(
-    String evaluationItem,
-    String grade,
-  ) {
-    final badges = <String>[];
-
-    // 1등급인 경우 배지 생성
-    if (grade.contains('1등급')) {
-      if (evaluationItem.contains('뇌졸중')) {
-        badges.add('뇌졸중 수술 전문');
-      } else if (evaluationItem.contains('심근경색')) {
-        badges.add('심근경색 치료 전문');
-      } else if (evaluationItem.contains('폐렴')) {
-        badges.add('폐렴 치료 전문');
-      } else if (evaluationItem.contains('응급')) {
-        badges.add('응급 치료 전문');
-      }
-    }
-
-    return badges;
   }
 
   /// 비급여 가격 정보 조회
